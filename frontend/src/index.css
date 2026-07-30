@@ -1,0 +1,16 @@
+body {
+  margin: 0;
+  background-color: #fff;
+}
+
+.navbar-brand {
+  letter-spacing: 2px;
+}
+
+.card {
+  transition: 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
