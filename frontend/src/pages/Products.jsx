@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 
 function Products() {
+
   const [products, setProducts] = useState([]);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch("http://127.0.0.1:5000/products")
@@ -16,6 +19,23 @@ function Products() {
       });
   }, []);
 
+  const handleViewDetails = (productId) => {
+
+    const isLoggedIn = localStorage.getItem("isLoggedIn");
+
+    if (!isLoggedIn) {
+
+      alert("Please login to view product details.");
+
+      navigate("/login");
+
+      return;
+    }
+
+    navigate(`/products/${productId}`);
+
+  };
+
   return (
     <>
       <Navbar />
@@ -23,6 +43,7 @@ function Products() {
       {/* Page Header */}
       <section className="bg-light py-5">
         <div className="container text-center py-4">
+
           <p className="text-uppercase text-secondary fw-bold">
             GlowCart Collection
           </p>
@@ -34,6 +55,7 @@ function Products() {
           <p className="text-secondary">
             Discover beauty products made for your everyday routine.
           </p>
+
         </div>
       </section>
 
@@ -43,6 +65,7 @@ function Products() {
 
           {/* Search + Filter */}
           <div className="row mb-5 g-3">
+
             <div className="col-md-8">
               <input
                 type="text"
@@ -61,10 +84,12 @@ function Products() {
                 <option>Fragrances</option>
               </select>
             </div>
+
           </div>
 
           {/* Product Count */}
           <div className="d-flex justify-content-between align-items-center mb-4">
+
             <h5 className="mb-0">
               {products.length} Products
             </h5>
@@ -75,6 +100,7 @@ function Products() {
               <option>Price: High to Low</option>
               <option>Name: A-Z</option>
             </select>
+
           </div>
 
           {/* Product Cards */}
@@ -137,12 +163,12 @@ function Products() {
                           Add to Cart
                         </button>
 
-                        <Link
-                          to={`/products/${product.product_id}`}
+                        <button
                           className="btn btn-outline-dark"
+                          onClick={() => handleViewDetails(product.product_id)}
                         >
                           View Details
-                        </Link>
+                        </button>
 
                       </div>
 
@@ -163,6 +189,7 @@ function Products() {
 
       {/* Footer */}
       <footer className="bg-dark text-white py-4">
+
         <div className="container text-center">
 
           <h5 className="fw-bold">
@@ -174,6 +201,7 @@ function Products() {
           </p>
 
         </div>
+
       </footer>
     </>
   );

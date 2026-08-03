@@ -1,8 +1,142 @@
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 
 function ProductDetails() {
+
   const { id } = useParams();
+  const navigate = useNavigate();
+
+  const [product, setProduct] = useState(null);
+
+  useEffect(() => {
+
+    const isLoggedIn = localStorage.getItem("isLoggedIn");
+
+    if (!isLoggedIn) {
+      alert("Please login to view product details.");
+      navigate("/login");
+      return;
+    }
+
+    fetch(`http://127.0.0.1:5000/products/${id}`)
+      .then((response) => response.json())
+      .then((data) => {
+        setProduct(data);
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+
+  }, [id, navigate]);
+
+  // ===========================
+  // Add to Cart Function
+  // ===========================
+
+  async function handleAddToCart() {
+
+    const customerId = localStorage.getItem("customerId");
+
+    try {
+
+      const response = await fetch("http://127.0.0.1:5000/add-to-cart", {
+
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+
+          customer_id: customerId,
+          product_id: product.product_id,
+
+        }),
+
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+
+        alert(result.message);
+
+      } else {
+
+        alert(result.error);
+
+      }
+
+    } catch (error) {
+
+      console.error(error);
+      alert("Something went wrong");
+
+    }
+
+  }
+
+  if (!product) {
+    return (
+      <>
+        <Navbar />
+        <div className="container text-center py-5">
+          <h3>Loading Product...</h3>
+        </div>
+      </>
+    );
+  }
+
+async function handleAddToWishlist() {
+
+  const customerId = localStorage.getItem("customerId");
+
+  try {
+
+    const response = await fetch(
+      "http://127.0.0.1:5000/add-to-wishlist",
+      {
+
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+
+          customer_id: customerId,
+          product_id: product.product_id,
+
+        }),
+
+      }
+    );
+
+    const result = await response.json();
+
+    if (response.ok) {
+
+      alert(result.message);
+
+    } else {
+
+      alert(result.message);
+
+    }
+
+  } catch (error) {
+
+    console.error(error);
+    alert("Something went wrong");
+
+  }
+
+}
+
+
 
   return (
     <>
@@ -13,6 +147,7 @@ function ProductDetails() {
 
           {/* Breadcrumb */}
           <nav className="mb-4">
+
             <Link
               to="/products"
               className="text-dark text-decoration-none"
@@ -25,8 +160,9 @@ function ProductDetails() {
             </span>
 
             <span className="text-secondary">
-              Product Details
+              {product.product_name}
             </span>
+
           </nav>
 
           <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
@@ -36,21 +172,15 @@ function ProductDetails() {
               {/* Product Image */}
               <div className="col-lg-6">
 
-                <div className="bg-secondary-subtle h-100 d-flex align-items-center justify-content-center p-5">
-
-                  <div className="text-center">
-
-                    <div className="display-1 mb-4">
-                      💄
-                    </div>
-
-                    <p className="text-secondary mb-0">
-                      Product Image
-                    </p>
-
-                  </div>
-
-                </div>
+                <img
+                  src={`/images/${product.image}`}
+                  alt={product.product_name}
+                  className="img-fluid w-100"
+                  style={{
+                    height: "500px",
+                    objectFit: "cover"
+                  }}
+                />
 
               </div>
 
@@ -60,11 +190,11 @@ function ProductDetails() {
                 <div className="p-4 p-md-5">
 
                   <small className="text-uppercase text-secondary fw-bold">
-                    Makeup
+                    {product.category_name}
                   </small>
 
                   <h1 className="fw-bold mt-3">
-                    Velvet Matte Lipstick
+                    {product.product_name}
                   </h1>
 
                   <div className="d-flex align-items-center gap-2 my-3">
@@ -74,22 +204,28 @@ function ProductDetails() {
                     </span>
 
                     <span className="text-secondary">
-                      4.8 (120 Reviews)
+                      Premium Product
                     </span>
 
                   </div>
 
                   <h2 className="fw-bold mb-4">
-                    $19.99
+                    ₹{product.price}
                   </h2>
 
                   <p className="text-secondary lh-lg">
-                    A premium matte lipstick designed for a
-                    smooth and comfortable finish. Perfect for
-                    everyday beauty and special occasions.
+                    {product.description}
                   </p>
 
                   <hr className="my-4" />
+
+                  <p>
+                    <strong>Stock :</strong> {product.stock}
+                  </p>
+
+                  <p>
+                    <strong>Status :</strong> {product.product_status}
+                  </p>
 
                   {/* Quantity */}
                   <div className="mb-4">
@@ -98,13 +234,16 @@ function ProductDetails() {
                       Quantity
                     </label>
 
-                    <div className="input-group" style={{ maxWidth: "150px" }}>
+                    <div
+                      className="input-group"
+                      style={{ maxWidth: "150px" }}
+                    >
 
                       <button
                         className="btn btn-outline-dark"
                         type="button"
                       >
-                        −
+                        -
                       </button>
 
                       <input
@@ -126,62 +265,24 @@ function ProductDetails() {
                   </div>
 
                   {/* Buttons */}
+
                   <div className="d-grid gap-2">
 
-                    <button className="btn btn-dark btn-lg">
+                    <button
+                      className="btn btn-dark btn-lg"
+                      onClick={handleAddToCart}
+                    >
                       🛒 Add to Cart
                     </button>
 
-                    <button className="btn btn-outline-dark btn-lg">
-                      ♡ Add to Wishlist
-                    </button>
+                    <button
+                        className="btn btn-outline-dark btn-lg"
+                        onClick={handleAddToWishlist}
+                      >
+                        ❤️ Add to Wishlist
+                      </button>
 
                   </div>
-
-                  {/* Product Info */}
-                  <div className="row mt-5 g-3">
-
-                    <div className="col-6">
-                      <div className="border rounded-3 p-3 text-center">
-                        <strong>🚚</strong>
-                        <p className="mb-0 mt-2 small">
-                          Fast Delivery
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="col-6">
-                      <div className="border rounded-3 p-3 text-center">
-                        <strong>↩️</strong>
-                        <p className="mb-0 mt-2 small">
-                          Easy Returns
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="col-6">
-                      <div className="border rounded-3 p-3 text-center">
-                        <strong>🔒</strong>
-                        <p className="mb-0 mt-2 small">
-                          Secure Payment
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="col-6">
-                      <div className="border rounded-3 p-3 text-center">
-                        <strong>✓</strong>
-                        <p className="mb-0 mt-2 small">
-                          Quality Product
-                        </p>
-                      </div>
-                    </div>
-
-                  </div>
-
-                  <p className="text-secondary small mt-4">
-                    Product ID: {id}
-                  </p>
 
                 </div>
 
@@ -194,7 +295,6 @@ function ProductDetails() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="bg-dark text-white py-4">
 
         <div className="container text-center">
@@ -210,6 +310,7 @@ function ProductDetails() {
         </div>
 
       </footer>
+
     </>
   );
 }

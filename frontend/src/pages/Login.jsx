@@ -10,6 +10,7 @@ function Login() {
   const navigate = useNavigate();
 
   async function handleLogin(e) {
+
     e.preventDefault();
 
     const customer = {
@@ -18,28 +19,49 @@ function Login() {
     };
 
     try {
+
       const response = await fetch("http://127.0.0.1:5000/login", {
+
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
         },
+
         body: JSON.stringify(customer),
+
       });
 
       const result = await response.json();
 
       if (response.ok) {
+
+        // Save login information
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("customerId", result.customer_id);
+        localStorage.setItem("customerName", result.customer_name);
+        localStorage.setItem("customerEmail", customerEmail);
+
+        // Clear form
         setCustomerEmail("");
         setCustomerPassword("");
 
+        // Redirect to Home
         navigate("/");
-      }else {
-          alert(result.message);
+
+      } else {
+
+        alert(result.message);
+
       }
+
     } catch (error) {
+
       console.error(error);
       alert("Something went wrong");
+
     }
+
   }
 
   return (
@@ -47,6 +69,7 @@ function Login() {
       <Navbar />
 
       <section className="bg-light min-vh-100 py-5">
+
         <div className="container py-5">
 
           <div className="row justify-content-center">
@@ -71,7 +94,6 @@ function Login() {
 
                   <form onSubmit={handleLogin}>
 
-                    {/* Email */}
                     <div className="mb-3">
 
                       <label className="form-label fw-semibold">
@@ -89,7 +111,6 @@ function Login() {
 
                     </div>
 
-                    {/* Password */}
                     <div className="mb-3">
 
                       <label className="form-label fw-semibold">
@@ -107,7 +128,6 @@ function Login() {
 
                     </div>
 
-                    {/* Remember + Forgot */}
                     <div className="d-flex justify-content-between align-items-center mb-4">
 
                       <div className="form-check">
@@ -136,7 +156,6 @@ function Login() {
 
                     </div>
 
-                    {/* Login Button */}
                     <div className="d-grid">
 
                       <button
@@ -150,10 +169,10 @@ function Login() {
 
                   </form>
 
-                  {/* Register */}
                   <div className="text-center mt-4">
 
                     <p className="text-secondary mb-0">
+
                       Don't have an account?{" "}
 
                       <Link
@@ -176,7 +195,9 @@ function Login() {
           </div>
 
         </div>
+
       </section>
+
     </>
   );
 }

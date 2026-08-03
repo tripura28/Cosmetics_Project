@@ -7,6 +7,8 @@ import Cart from "./pages/Cart";
 import ProductDetails from "./pages/ProductDetails";
 import Categories from "./pages/Categories";
 import About from "./pages/About";
+import Wishlist from "./pages/Wishlist";
+
 
 function App() {
   return (
@@ -30,6 +32,10 @@ function App() {
   <Route path="/cart" element={<Cart />} />
 
   <Route path="/categories" element={<Categories />} />
+  <Route
+  path="/wishlist"
+  element={<Wishlist />}
+/>
 
   
 
