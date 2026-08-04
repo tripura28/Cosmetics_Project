@@ -1,36 +1,46 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 
 function Categories() {
   const navigate = useNavigate();
+  const [categories, setCategories] = useState([]);
   
-   const categories = [
-  {
-    name: "Makeup",
-    icon: "💄",
-    description: "Lipsticks, foundations, blushes and more.",
-  },
-  {
-    name: "Skincare",
-    icon: "🧴",
-    description: "Serums, cleansers, moisturizers and creams.",
-  },
-  {
-    name: "Hair Care",
-    icon: "💇",
-    description: "Shampoos, conditioners, masks and serums.",
-  },
-  {
-    name: "Body Care",
-    icon: "🧼",
-    description: "Body lotions, body wash, scrubs and creams.",
-  },
-  {
-    name: "Fragrances",
-    icon: "🌸",
-    description: "Perfumes, body mists and fresh fragrances.",
-  },
-];
+   useEffect(() => {
+
+  fetch("http://127.0.0.1:5000/categories")
+    .then((res) => res.json())
+    .then((data) => {
+
+      const icons = {
+        "Makeup": "💄",
+        "Skincare": "🧴",
+        "Hair Care": "💇",
+        "Body Care": "🧼",
+        "Fragrances": "🌸"
+      };
+
+      const descriptions = {
+        "Makeup": "Lipsticks, foundations, blushes and more.",
+        "Skincare": "Serums, cleansers, moisturizers and creams.",
+        "Hair Care": "Shampoos, conditioners, masks and serums.",
+        "Body Care": "Body lotions, body wash, scrubs and creams.",
+        "Fragrances": "Perfumes, body mists and fresh fragrances."
+      };
+
+      const updatedCategories = data.map((category) => ({
+        ...category,
+        icon: icons[category.category_name] || "✨",
+        description:
+          descriptions[category.category_name] || "Beauty Collection"
+      }));
+
+      setCategories(updatedCategories);
+
+    })
+    .catch((err) => console.error(err));
+
+}, []);
 
   return (
     <>
@@ -64,7 +74,7 @@ function Categories() {
             {categories.map((category) => (
               <div
                 className="col-12 col-sm-6 col-lg-3"
-                key={category.name}
+                key={category.category_id}
               >
                 <div
               className="card border-0 shadow-sm rounded-4 h-100"
@@ -88,7 +98,7 @@ function Categories() {
                   <div className="card-body text-center p-4">
 
                     <h4 className="fw-bold">
-                      {category.name}
+                      {category.category_name}
                     </h4>
 
                     <p className="text-secondary">
@@ -99,8 +109,8 @@ function Categories() {
                       className="btn btn-dark"
                       onClick={() =>
                         navigate(
-                          `/products?category=${encodeURIComponent(category.name)}`
-                        )
+                       `/products?category=${encodeURIComponent(category.category_name)}`
+)
                       }
                     >
                       View Products

@@ -5,6 +5,7 @@ import Navbar from "../components/Navbar";
 function Products() {
 
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [sortOption, setSortOption] = useState("Sort By");
@@ -22,6 +23,7 @@ function Products() {
         console.error("Error fetching products:", error);
       });
   }, []);
+
   useEffect(() => {
 
   const category = searchParams.get("category");
@@ -99,6 +101,18 @@ function Products() {
     return 0;
 
   });
+  useEffect(() => {
+
+  fetch("http://127.0.0.1:5000/categories")
+    .then((response) => response.json())
+    .then((data) => {
+      setCategories(data);
+    })
+    .catch((error) => {
+      console.error("Error fetching categories:", error);
+    });
+
+}, []);
 
   return (
     <>
@@ -148,12 +162,20 @@ function Products() {
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
-                <option>All Categories</option>
-                <option>Makeup</option>
-                <option>Skincare</option>
-                <option>Hair Care</option>
-                <option>Body Care</option>
-                <option>Fragrances</option>
+                <option value="All Categories">
+                    All Categories
+                  </option>
+
+                  {categories.map((category) => (
+
+                    <option
+                      key={category.category_id}
+                      value={category.category_name}
+                    >
+                      {category.category_name}
+                    </option>
+
+                  ))}
               </select>
             </div>
 

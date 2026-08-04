@@ -1,61 +1,157 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 
 function Home() {
+  const navigate = useNavigate();
+
+const [categories, setCategories] = useState([]);
+const [products, setProducts] = useState([]);
+useEffect(() => {
+
+  fetch("http://127.0.0.1:5000/categories")
+    .then(res => res.json())
+    .then(data => {
+
+      const icons = {
+        "Makeup": "💄",
+        "Skincare": "🧴",
+        "Hair Care": "💇",
+        "Body Care": "🧼",
+        "Fragrances": "🌸"
+      };
+
+      const descriptions = {
+        "Makeup": "Lipsticks, foundations and more.",
+        "Skincare": "Serums, cleansers and moisturizers.",
+        "Hair Care": "Products for healthy hair.",
+        "Body Care": "Body lotions, scrubs and washes.",
+        "Fragrances": "Fresh and beautiful fragrances."
+      };
+
+      const updated = data.map(category => ({
+        ...category,
+        icon: icons[category.category_name] || "✨",
+        description:
+          descriptions[category.category_name] ||
+          "Beauty Collection"
+      }));
+
+      setCategories(updated);
+
+    })
+    .catch(console.error);
+
+}, []);
+
+
   return (
     <>
       <Navbar />
 
       {/* HERO SECTION */}
-      <section className="bg-light py-5">
-        <div className="container py-5">
-          <div className="row align-items-center">
 
-            <div className="col-lg-6 mb-4 mb-lg-0">
-              <p className="text-uppercase text-secondary fw-bold">
-                Welcome to GlowCart
-              </p>
+<section
+  className="d-flex align-items-center"
+  style={{
+    minHeight: "90vh",
+    backgroundImage: "url('/images/hero.jpg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    position: "relative"
+  }}
+>
 
-              <h1 className="display-2 fw-bold">
-                Beauty That
-                <br />
-                Feels Like You
-              </h1>
+  <div
+    style={{
+      position: "absolute",
+      inset: 0,
+      background: "rgba(0,0,0,0.45)"
+    }}
+  ></div>
 
-              <p className="lead text-secondary my-4">
-                Discover makeup, skincare, haircare and
-                fragrances for your everyday beauty.
-              </p>
+  <div
+    className="container"
+    style={{
+      position: "relative",
+      zIndex: 2
+    }}
+  >
 
-              <Link
-                to="/products"
-                className="btn btn-dark btn-lg px-4"
-              >
-                Shop Now
-              </Link>
+    <div className="row">
 
-              <Link
-                to="/products"
-                className="btn btn-outline-dark btn-lg px-4 ms-2"
-              >
-                Explore
-              </Link>
-            </div>
+      <div className="col-lg-7">
 
-            <div className="col-lg-6">
-              <div className="bg-white rounded-4 shadow-sm p-5 text-center">
-                <div className="display-1">💄</div>
-                <h3 className="mt-4">Your Beauty Store</h3>
-                <p className="text-secondary">
-                  Makeup • Skincare • Haircare • Fragrance
-                </p>
-              </div>
-            </div>
+        <p
+          className="text-uppercase"
+          style={{
+            letterSpacing: "3px",
+            color: "#FFD6E8",
+            fontWeight: "600"
+          }}
+        >
+          Welcome To GlowCart
+        </p>
 
-          </div>
+        <h1
+          style={{
+            fontFamily: "'Cinzel', serif",
+            fontSize: "4rem",
+            color: "white",
+            fontWeight: "700",
+            lineHeight: "1.2"
+          }}
+        >
+          Glow Naturally,
+          <br />
+          Shine Beautifully
+        </h1>
+
+        <p
+          className="mt-4"
+          style={{
+            color: "#f8f8f8",
+            maxWidth: "550px",
+            fontSize: "1.1rem"
+          }}
+        >
+          Discover premium skincare, makeup,
+          fragrances and beauty essentials
+          carefully selected for your everyday
+          confidence.
+        </p>
+
+        <div className="mt-4">
+
+          <Link
+            to="/products"
+            className="btn btn-lg me-3"
+            style={{
+              background: "#7C6EE6",
+              color: "white",
+              borderRadius: "30px",
+              padding: "12px 35px"
+            }}
+          >
+            Shop Now
+          </Link>
+
+          <Link
+            to="/categories"
+            className="btn btn-outline-light btn-lg rounded-pill px-4"
+          >
+            Explore Collections
+          </Link>
+
         </div>
-      </section>
 
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
 
       {/* CATEGORY SECTION */}
       <section className="py-5">
