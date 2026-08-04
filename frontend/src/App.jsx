@@ -8,6 +8,10 @@ import ProductDetails from "./pages/ProductDetails";
 import Categories from "./pages/Categories";
 import About from "./pages/About";
 import Wishlist from "./pages/Wishlist";
+import Checkout from "./pages/Checkout";
+import Orders from "./pages/Orders";
+import OrderDetails from "./pages/OrderDetails";
+
 
 
 function App() {
@@ -35,9 +39,23 @@ function App() {
   <Route
   path="/wishlist"
   element={<Wishlist />}
+
+/>
+<Route
+    path="/checkout"
+    element={<Checkout />}
 />
 
-  
+<Route path="/orders" element={<Orders />} />
+<Route
+    path="/order-details/:orderId"
+    element={<OrderDetails />}
+/>
+
+<Route
+    path="/about"
+    element={<About />}
+/>
 
 </Routes>
 

@@ -9,6 +9,7 @@ function Wishlist() {
   const navigate = useNavigate();
 
   const customerId = localStorage.getItem("customerId");
+  
 
   useEffect(() => {
 
@@ -50,7 +51,9 @@ function Wishlist() {
 
       if (response.ok) {
 
-        alert(result.message);
+       alert(result.message);
+
+        navigate("/cart");
 
         setWishlistItems(
           wishlistItems.filter(
@@ -71,6 +74,52 @@ function Wishlist() {
     }
 
   }
+
+ async function moveToCart(productId) {
+
+  try {
+
+    const response = await fetch(
+      "http://127.0.0.1:5000/move-to-cart",
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+
+          customer_id: customerId,
+          product_id: productId
+
+        })
+
+      }
+    );
+
+    const result = await response.json();
+
+    if (response.ok) {
+
+      alert(result.message);
+
+      navigate("/cart");
+
+    } else {
+
+      alert(result.message);
+
+    }
+
+  } catch (error) {
+
+    console.error(error);
+    alert("Something went wrong.");
+
+  }
+
+}
 
   return (
     <>
@@ -163,9 +212,10 @@ function Wishlist() {
 
                       <button
                         className="btn btn-dark btn-sm"
-                      >
-                        Move to Cart
-                      </button>
+                        onClick={() => moveToCart(item.product_id)}
+                    >
+                        🛒 Move to Cart
+                    </button>
 
                     </div>
 

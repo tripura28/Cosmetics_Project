@@ -1,29 +1,36 @@
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 
 function Categories() {
-  const categories = [
-    {
-      name: "Makeup",
-      icon: "💄",
-      description: "Lipsticks, foundations, blushes and more.",
-    },
-    {
-      name: "Skincare",
-      icon: "🧴",
-      description: "Serums, cleansers, moisturizers and creams.",
-    },
-    {
-      name: "Haircare",
-      icon: "💇",
-      description: "Shampoos, conditioners, masks and serums.",
-    },
-    {
-      name: "Fragrance",
-      icon: "🌸",
-      description: "Perfumes, body mists and fresh fragrances.",
-    },
-  ];
+  const navigate = useNavigate();
+  
+   const categories = [
+  {
+    name: "Makeup",
+    icon: "💄",
+    description: "Lipsticks, foundations, blushes and more.",
+  },
+  {
+    name: "Skincare",
+    icon: "🧴",
+    description: "Serums, cleansers, moisturizers and creams.",
+  },
+  {
+    name: "Hair Care",
+    icon: "💇",
+    description: "Shampoos, conditioners, masks and serums.",
+  },
+  {
+    name: "Body Care",
+    icon: "🧼",
+    description: "Body lotions, body wash, scrubs and creams.",
+  },
+  {
+    name: "Fragrances",
+    icon: "🌸",
+    description: "Perfumes, body mists and fresh fragrances.",
+  },
+];
 
   return (
     <>
@@ -59,7 +66,18 @@ function Categories() {
                 className="col-12 col-sm-6 col-lg-3"
                 key={category.name}
               >
-                <div className="card border-0 shadow-sm rounded-4 h-100">
+                <div
+              className="card border-0 shadow-sm rounded-4 h-100"
+              style={{
+                cursor: "pointer",
+                transition: "0.3s"
+              }}
+              onClick={() =>
+                navigate(
+                  `/products?category=${encodeURIComponent(category.name)}`
+                )
+              }
+            >
 
                   <div className="bg-light text-center py-5">
                     <span className="display-1">
@@ -77,12 +95,16 @@ function Categories() {
                       {category.description}
                     </p>
 
-                    <Link
-                      to="/products"
+                    <button
                       className="btn btn-dark"
+                      onClick={() =>
+                        navigate(
+                          `/products?category=${encodeURIComponent(category.name)}`
+                        )
+                      }
                     >
                       View Products
-                    </Link>
+                    </button>
 
                   </div>
 

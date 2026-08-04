@@ -6,310 +6,328 @@ function About() {
     <>
       <Navbar />
 
-      {/* Hero */}
-      <section className="bg-light py-5">
-        <div className="container py-5">
-          <div className="row align-items-center">
+      <section
+        className="py-5"
+        style={{
+          background: "linear-gradient(to right, #fff,#f8f5ff)"
+        }}
+      >
+        <div className="container">
 
-            <div className="col-lg-6">
-              <p className="text-uppercase text-secondary fw-bold">
-                About GlowCart
-              </p>
+          {/* Hero */}
 
-              <h1 className="display-4 fw-bold">
-                Beauty made simple.
-              </h1>
+          <div className="text-center py-5">
 
-              <p className="lead text-secondary mt-4">
-                GlowCart is a modern online beauty store designed
-                to make discovering and shopping for beauty products
-                simple, convenient and enjoyable.
-              </p>
+            <h1
+              style={{
+                fontFamily: "'Cinzel', serif",
+                fontSize: "3.2rem",
+                fontWeight: "700",
+                color: "#7C6EE6"
+              }}
+            >
+              About GlowCart
+            </h1>
 
-              <Link
-                to="/products"
-                className="btn btn-dark btn-lg mt-3"
-              >
-                Explore Products
-              </Link>
-            </div>
-
-            <div className="col-lg-6 mt-5 mt-lg-0">
-              <div className="bg-white rounded-4 shadow-sm p-5 text-center">
-
-                <div className="display-1">
-                  ✨
-                </div>
-
-                <h3 className="fw-bold mt-4">
-                  Your Beauty Destination
-                </h3>
-
-                <p className="text-secondary mb-0">
-                  Makeup • Skincare • Haircare • Fragrance
-                </p>
-
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* Our Story */}
-      <section className="py-5">
-        <div className="container py-4">
-
-          <div className="row align-items-center">
-
-            <div className="col-lg-5 mb-4 mb-lg-0">
-              <div className="bg-secondary-subtle rounded-4 p-5 text-center">
-
-                <div className="display-1">
-                  💄
-                </div>
-
-                <h3 className="fw-bold mt-4">
-                  Glow With Confidence
-                </h3>
-
-              </div>
-            </div>
-
-            <div className="col-lg-7">
-
-              <p className="text-uppercase text-secondary fw-bold">
-                Our Story
-              </p>
-
-              <h2 className="fw-bold mb-4">
-                A better way to shop for beauty
-              </h2>
-
-              <p className="text-secondary lh-lg">
-                GlowCart was created with a simple idea:
-                make beauty shopping easier. Instead of searching
-                through different stores, customers can discover
-                makeup, skincare, haircare and fragrances in one
-                convenient place.
-              </p>
-
-              <p className="text-secondary lh-lg">
-                Our goal is to provide a smooth shopping experience
-                with easy product discovery, simple navigation,
-                secure checkout and reliable delivery.
-              </p>
-
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* Mission */}
-      <section className="bg-light py-5">
-        <div className="container py-4">
-
-          <div className="text-center mb-5">
-
-            <p className="text-uppercase text-secondary fw-bold">
-              What We Believe
+            <p
+              className="mt-4 mx-auto"
+              style={{
+                maxWidth: "700px",
+                fontFamily: "'Poppins', sans-serif",
+                fontSize: "1.15rem",
+                color: "#666"
+              }}
+            >
+              Beauty begins with confidence.
+              GlowCart brings together premium skincare,
+              makeup, fragrances, haircare and body care
+              products to make your beauty journey
+              effortless and enjoyable.
             </p>
 
-            <h2 className="fw-bold">
+            <Link
+              to="/products"
+              className="btn mt-4 px-5 py-3 rounded-pill"
+              style={{
+                backgroundColor: "#7C6EE6",
+                color: "white"
+              }}
+            >
+              Explore Products
+            </Link>
+
+          </div>
+
+          {/* Story */}
+
+          <div className="row align-items-center py-5">
+
+            <div className="col-lg-6">
+
+              <img
+                src="/images/about.png"
+                alt="About GlowCart"
+                className="img-fluid rounded-4 shadow"
+              />
+
+            </div>
+
+            <div className="col-lg-6 mt-4 mt-lg-0">
+
+              <h2
+                style={{
+                  fontFamily: "'Cinzel', serif",
+                  color: "#7C6EE6"
+                }}
+              >
+                Our Story
+              </h2>
+
+              <p
+                className="mt-3"
+                style={{
+                  fontFamily: "'Poppins', sans-serif",
+                  lineHeight: "32px",
+                  color: "#555"
+                }}
+              >
+                GlowCart was created with a simple vision—
+                to make beauty shopping easy, authentic and
+                affordable. We carefully curate trusted
+                products so that every customer can shop with
+                confidence and discover products that enhance
+                their natural beauty.
+              </p>
+
+            </div>
+
+          </div>
+
+          {/* Mission */}
+
+          <div className="text-center py-5">
+
+            <h2
+              style={{
+                fontFamily: "'Cinzel', serif",
+                color: "#7C6EE6"
+              }}
+            >
               Our Mission
             </h2>
 
-            <p className="text-secondary">
-              Making your beauty shopping experience better.
+            <div className="row mt-5">
+
+              <div className="col-md-3">
+
+                <div className="card border-0 shadow rounded-4 p-4 h-100">
+
+                  <h1>💄</h1>
+
+                  <h5>Authentic Products</h5>
+
+                  <p className="text-secondary">
+                    We provide only trusted and genuine
+                    beauty products.
+                  </p>
+
+                </div>
+
+              </div>
+
+              <div className="col-md-3">
+
+                <div className="card border-0 shadow rounded-4 p-4 h-100">
+
+                  <h1>🚚</h1>
+
+                  <h5>Fast Delivery</h5>
+
+                  <p className="text-secondary">
+                    Quick and secure delivery right to
+                    your doorstep.
+                  </p>
+
+                </div>
+
+              </div>
+
+              <div className="col-md-3">
+
+                <div className="card border-0 shadow rounded-4 p-4 h-100">
+
+                  <h1>🔒</h1>
+
+                  <h5>Secure Shopping</h5>
+
+                  <p className="text-secondary">
+                    Safe transactions and a trusted
+                    shopping experience.
+                  </p>
+
+                </div>
+
+              </div>
+
+              <div className="col-md-3">
+
+                <div className="card border-0 shadow rounded-4 p-4 h-100">
+
+                  <h1>❤️</h1>
+
+                  <h5>Customer First</h5>
+
+                  <p className="text-secondary">
+                    Every decision we make begins with
+                    customer satisfaction.
+                  </p>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* Categories */}
+
+          <div className="py-5">
+
+            <h2
+              className="text-center mb-5"
+              style={{
+                fontFamily: "'Cinzel', serif",
+                color: "#7C6EE6"
+              }}
+            >
+              What We Offer
+            </h2>
+
+            <div className="row text-center">
+
+              {[
+                "💄 Makeup",
+                "🧴 Skincare",
+                "💇 Hair Care",
+                "🌸 Fragrances",
+                "🧼 Body Care"
+              ].map((item) => (
+
+                <div className="col-md mb-3" key={item}>
+
+                  <div
+                    className="card border-0 shadow-sm rounded-4 py-4"
+                    style={{
+                      transition: "0.3s"
+                    }}
+                  >
+
+                    <h5>{item}</h5>
+
+                  </div>
+
+                </div>
+
+              ))}
+
+            </div>
+
+          </div>
+
+          {/* Statistics */}
+
+          <div className="py-5">
+
+            <div className="row text-center">
+
+              <div className="col-md-3">
+
+                <h1 style={{ color: "#7C6EE6" }}>500+</h1>
+
+                <p>Beauty Products</p>
+
+              </div>
+
+              <div className="col-md-3">
+
+                <h1 style={{ color: "#7C6EE6" }}>100+</h1>
+
+                <p>Happy Customers</p>
+
+              </div>
+
+              <div className="col-md-3">
+
+                <h1 style={{ color: "#7C6EE6" }}>5+</h1>
+
+                <p>Categories</p>
+
+              </div>
+
+              <div className="col-md-3">
+
+                <h1 style={{ color: "#7C6EE6" }}>24/7</h1>
+
+                <p>Support</p>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* Contact */}
+
+          <div className="text-center py-5">
+
+            <h2
+              style={{
+                fontFamily: "'Cinzel', serif",
+                color: "#7C6EE6"
+              }}
+            >
+              Contact Us
+            </h2>
+
+            <p className="mt-4">
+              📧 support@glowcart.com
+            </p>
+
+            <p>
+              📞 +91 9876543210
+            </p>
+
+            <p>
+              📍 Vijayawada, Andhra Pradesh
             </p>
 
           </div>
 
-          <div className="row g-4">
-
-            <div className="col-md-4">
-              <div className="card border-0 shadow-sm rounded-4 h-100">
-
-                <div className="card-body text-center p-4">
-
-                  <div className="display-5">
-                    ✨
-                  </div>
-
-                  <h5 className="fw-bold mt-3">
-                    Quality
-                  </h5>
-
-                  <p className="text-secondary">
-                    We aim to provide a collection of
-                    quality beauty products.
-                  </p>
-
-                </div>
-
-              </div>
-            </div>
-
-            <div className="col-md-4">
-              <div className="card border-0 shadow-sm rounded-4 h-100">
-
-                <div className="card-body text-center p-4">
-
-                  <div className="display-5">
-                    🛍️
-                  </div>
-
-                  <h5 className="fw-bold mt-3">
-                    Convenience
-                  </h5>
-
-                  <p className="text-secondary">
-                    Find and explore beauty products
-                    easily from one place.
-                  </p>
-
-                </div>
-
-              </div>
-            </div>
-
-            <div className="col-md-4">
-              <div className="card border-0 shadow-sm rounded-4 h-100">
-
-                <div className="card-body text-center p-4">
-
-                  <div className="display-5">
-                    ❤️
-                  </div>
-
-                  <h5 className="fw-bold mt-3">
-                    Customer First
-                  </h5>
-
-                  <p className="text-secondary">
-                    We focus on creating a simple and
-                    enjoyable customer experience.
-                  </p>
-
-                </div>
-
-              </div>
-            </div>
-
-          </div>
-
         </div>
+
       </section>
 
-      {/* Why GlowCart */}
-      <section className="py-5">
-        <div className="container py-4">
-
-          <div className="text-center mb-5">
-            <h2 className="fw-bold">
-              Why Choose GlowCart?
-            </h2>
-          </div>
-
-          <div className="row text-center g-4">
-
-            <div className="col-md-3">
-              <div className="p-3">
-                <div className="display-6">🔍</div>
-                <h5 className="fw-bold mt-3">
-                  Easy Discovery
-                </h5>
-                <p className="text-secondary">
-                  Find products quickly.
-                </p>
-              </div>
-            </div>
-
-            <div className="col-md-3">
-              <div className="p-3">
-                <div className="display-6">🛒</div>
-                <h5 className="fw-bold mt-3">
-                  Easy Shopping
-                </h5>
-                <p className="text-secondary">
-                  Simple cart and checkout.
-                </p>
-              </div>
-            </div>
-
-            <div className="col-md-3">
-              <div className="p-3">
-                <div className="display-6">🔒</div>
-                <h5 className="fw-bold mt-3">
-                  Secure
-                </h5>
-                <p className="text-secondary">
-                  Safe shopping experience.
-                </p>
-              </div>
-            </div>
-
-            <div className="col-md-3">
-              <div className="p-3">
-                <div className="display-6">🚚</div>
-                <h5 className="fw-bold mt-3">
-                  Reliable Delivery
-                </h5>
-                <p className="text-secondary">
-                  Convenient delivery experience.
-                </p>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* Contact CTA */}
-      <section className="bg-dark text-white py-5">
-        <div className="container text-center py-4">
-
-          <h2 className="fw-bold">
-            Ready to find your glow?
-          </h2>
-
-          <p className="text-secondary">
-            Explore our beauty collection today.
-          </p>
-
-          <Link
-            to="/products"
-            className="btn btn-light btn-lg mt-3"
-          >
-            Shop Now
-          </Link>
-
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-black text-white py-4">
+      <footer className="bg-dark text-white py-4">
 
         <div className="container text-center">
 
-          <h5 className="fw-bold">
+          <h4
+            style={{
+              fontFamily: "'Cinzel', serif"
+            }}
+          >
             GlowCart
-          </h5>
+          </h4>
 
           <p className="text-secondary mb-0">
-            Beauty made simple.
-          </p>
-
-          <p className="text-secondary mt-2 mb-0">
-            © 2026 GlowCart. All Rights Reserved.
+            Beauty Made Simple.
           </p>
 
         </div>
 
       </footer>
+
     </>
   );
 }

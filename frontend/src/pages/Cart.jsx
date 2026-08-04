@@ -319,13 +319,15 @@ function Cart() {
 
                   <div className="d-grid">
 
-                    <button
-                      className="btn btn-dark btn-lg"
-                      disabled={cartItems.length === 0}
-                    >
-                      Proceed to Checkout
-                    </button>
+                   
 
+                  <button
+                    className="btn btn-dark btn-lg"
+                    disabled={cartItems.length === 0}
+                    onClick={() => navigate("/checkout")}
+                  >
+                    Proceed to Checkout
+                  </button>
                   </div>
 
                 </div>

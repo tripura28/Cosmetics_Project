@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 
 function Products() {
 
   const [products, setProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All Categories");
+  const [sortOption, setSortOption] = useState("Sort By");
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     fetch("http://127.0.0.1:5000/products")
@@ -18,6 +22,21 @@ function Products() {
         console.error("Error fetching products:", error);
       });
   }, []);
+  useEffect(() => {
+
+  const category = searchParams.get("category");
+
+  if (category) {
+
+    setSelectedCategory(category);
+
+  } else {
+
+    setSelectedCategory("All Categories");
+
+  }
+
+}, [searchParams]);
 
   const handleViewDetails = (productId) => {
 
@@ -36,6 +55,51 @@ function Products() {
 
   };
 
+ const filteredProducts = [...products]
+  .filter((product) => {
+
+    const matchesSearch =
+      product.product_name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+
+    const matchesCategory =
+      selectedCategory === "All Categories" ||
+      product.category_name === selectedCategory;
+
+    return matchesSearch && matchesCategory;
+
+  })
+  .sort((a, b) => {
+
+    if (sortOption === "LowToHigh") {
+
+      return a.price - b.price;
+
+    }
+
+    if (sortOption === "HighToLow") {
+
+      return b.price - a.price;
+
+    }
+
+    if (sortOption === "AToZ") {
+
+      return a.product_name.localeCompare(b.product_name);
+
+    }
+
+    if (sortOption === "ZToA") {
+
+      return b.product_name.localeCompare(a.product_name);
+
+    }
+
+    return 0;
+
+  });
+
   return (
     <>
       <Navbar />
@@ -49,8 +113,10 @@ function Products() {
           </p>
 
           <h1 className="display-5 fw-bold">
-            All Products
-          </h1>
+          {selectedCategory === "All Categories"
+            ? "All Products"
+            : selectedCategory}
+        </h1>
 
           <p className="text-secondary">
             Discover beauty products made for your everyday routine.
@@ -68,14 +134,20 @@ function Products() {
 
             <div className="col-md-8">
               <input
-                type="text"
-                className="form-control form-control-lg"
-                placeholder="Search products..."
-              />
+                  type="text"
+                  className="form-control form-control-lg"
+                  placeholder="Search products..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
             </div>
 
             <div className="col-md-4">
-              <select className="form-select form-select-lg">
+              <select
+                className="form-select form-select-lg"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
                 <option>All Categories</option>
                 <option>Makeup</option>
                 <option>Skincare</option>
@@ -91,14 +163,19 @@ function Products() {
           <div className="d-flex justify-content-between align-items-center mb-4">
 
             <h5 className="mb-0">
-              {products.length} Products
+              {filteredProducts.length} Products
             </h5>
 
-            <select className="form-select w-auto">
-              <option>Sort By</option>
-              <option>Price: Low to High</option>
-              <option>Price: High to Low</option>
-              <option>Name: A-Z</option>
+            <select
+                className="form-select w-auto"
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value)}
+              >
+              <option value="Sort By">Sort By</option>
+              <option value="LowToHigh">Price: Low to High</option>
+              <option value="HighToLow">Price: High to Low</option>
+              <option value="AToZ">Name: A-Z</option>
+              <option value="ZToA">Name: Z-A</option>
             </select>
 
           </div>
@@ -106,7 +183,7 @@ function Products() {
           {/* Product Cards */}
           <div className="row g-4">
 
-            {products.map((product) => (
+            {filteredProducts.map((product) => (
 
               <div
                 className="col-12 col-sm-6 col-lg-3"
