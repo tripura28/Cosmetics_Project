@@ -57,6 +57,56 @@ function Products() {
 
   };
 
+  async function handleAddToCart(productId) {
+
+  const customerId = localStorage.getItem("customerId");
+  const isLoggedIn = localStorage.getItem("isLoggedIn");
+
+  if (!isLoggedIn) {
+
+    alert("Please login first.");
+    navigate("/login");
+    return;
+
+  }
+
+  try {
+
+    const response = await fetch(
+      "http://127.0.0.1:5000/add-to-cart",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          customer_id: customerId,
+          product_id: productId
+        })
+      }
+    );
+
+    const result = await response.json();
+
+    if (response.ok) {
+
+      alert(result.message);
+
+    } else {
+
+      alert(result.error || result.message);
+
+    }
+
+  } catch (error) {
+
+    console.error(error);
+    alert("Something went wrong.");
+
+  }
+
+}
+
  const filteredProducts = [...products]
   .filter((product) => {
 
@@ -258,7 +308,10 @@ function Products() {
 
                       <div className="d-grid gap-2">
 
-                        <button className="btn btn-dark">
+                       <button
+                          className="btn btn-dark"
+                          onClick={() => handleAddToCart(product.product_id)}
+                        >
                           Add to Cart
                         </button>
 

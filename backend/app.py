@@ -202,6 +202,39 @@ def get_product(product_id):
         if conn:
             conn.close()
 
+@app.route("/categories", methods=["GET"])
+def get_categories():
+
+    cursor = None
+    conn = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT category_id, category_name
+            FROM categories
+            ORDER BY category_name
+        """)
+
+        categories = cursor.fetchall()
+
+        return jsonify(categories)
+
+    except Exception as e:
+
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
 @app.route("/add-to-cart", methods=["POST"])
 def add_to_cart():
 

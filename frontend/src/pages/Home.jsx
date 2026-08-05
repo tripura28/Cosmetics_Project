@@ -3,47 +3,65 @@ import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 
 function Home() {
+
+  // ================= Navigation =================
   const navigate = useNavigate();
 
-const [categories, setCategories] = useState([]);
-const [products, setProducts] = useState([]);
-useEffect(() => {
+  // ================= State =================
+  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
 
-  fetch("http://127.0.0.1:5000/categories")
-    .then(res => res.json())
-    .then(data => {
+  // ================= Fetch Categories =================
+  useEffect(() => {
 
-      const icons = {
-        "Makeup": "💄",
-        "Skincare": "🧴",
-        "Hair Care": "💇",
-        "Body Care": "🧼",
-        "Fragrances": "🌸"
-      };
+    fetch("http://127.0.0.1:5000/categories")
+      .then((res) => res.json())
+      .then((data) => {
 
-      const descriptions = {
-        "Makeup": "Lipsticks, foundations and more.",
-        "Skincare": "Serums, cleansers and moisturizers.",
-        "Hair Care": "Products for healthy hair.",
-        "Body Care": "Body lotions, scrubs and washes.",
-        "Fragrances": "Fresh and beautiful fragrances."
-      };
+        const icons = {
+          "Makeup": "💄",
+          "Skincare": "🧴",
+          "Hair Care": "💇",
+          "Body Care": "🧼",
+          "Fragrances": "🌸"
+        };
 
-      const updated = data.map(category => ({
-        ...category,
-        icon: icons[category.category_name] || "✨",
-        description:
-          descriptions[category.category_name] ||
-          "Beauty Collection"
-      }));
+        const descriptions = {
+          "Makeup": "Lipsticks, foundations and more.",
+          "Skincare": "Serums, cleansers and moisturizers.",
+          "Hair Care": "Products for healthy hair.",
+          "Body Care": "Body lotions, scrubs and washes.",
+          "Fragrances": "Fresh and beautiful fragrances."
+        };
 
-      setCategories(updated);
+        const updatedCategories = data.map((category) => ({
+          ...category,
+          icon: icons[category.category_name] || "✨",
+          description:
+            descriptions[category.category_name] ||
+            "Beauty Collection"
+        }));
 
-    })
-    .catch(console.error);
+        setCategories(updatedCategories);
 
-}, []);
+      })
+      .catch(console.error);
 
+  }, []);
+
+  // ================= Fetch Products =================
+  useEffect(() => {
+
+    fetch("http://127.0.0.1:5000/products")
+      .then((res) => res.json())
+      .then((data) => {
+
+        setProducts(data.slice(0, 4));
+
+      })
+      .catch(console.error);
+
+  }, []);
 
   return (
     <>
@@ -167,246 +185,59 @@ useEffect(() => {
             </h2>
           </div>
 
-          <div className="row g-4">
+      <div className="row g-4">
 
-            <div className="col-12 col-sm-6 col-lg-3">
-              <div className="card border-0 shadow-sm rounded-4 h-100">
-                <div className="card-body text-center p-4">
-                  <div className="display-4">💄</div>
-                  <h5 className="fw-bold mt-3">Makeup</h5>
-                  <p className="text-secondary">
-                    Lipsticks, foundations and more
-                  </p>
+  {categories.map((category) => (
 
-                  <Link
-                    to="/products"
-                    className="btn btn-outline-dark"
-                  >
-                    Explore
-                  </Link>
-                </div>
-              </div>
-            </div>
+    <div
+      className="col-12 col-sm-6 col-lg-3"
+      key={category.category_id}
+    >
 
+      <div
+        className="card border-0 shadow-sm rounded-4 h-100"
+        style={{
+          transition: "0.3s",
+          cursor: "pointer"
+        }}
+      >
 
-            <div className="col-12 col-sm-6 col-lg-3">
-              <div className="card border-0 shadow-sm rounded-4 h-100">
-                <div className="card-body text-center p-4">
-                  <div className="display-4">🧴</div>
-                  <h5 className="fw-bold mt-3">Skincare</h5>
-                  <p className="text-secondary">
-                    Serums, cleansers and moisturizers
-                  </p>
+        <div className="card-body text-center p-4">
 
-                  <Link
-                    to="/products"
-                    className="btn btn-outline-dark"
-                  >
-                    Explore
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-
-            <div className="col-12 col-sm-6 col-lg-3">
-              <div className="card border-0 shadow-sm rounded-4 h-100">
-                <div className="card-body text-center p-4">
-                  <div className="display-4">💇</div>
-                  <h5 className="fw-bold mt-3">Haircare</h5>
-                  <p className="text-secondary">
-                    Products for healthy hair
-                  </p>
-
-                  <Link
-                    to="/products"
-                    className="btn btn-outline-dark"
-                  >
-                    Explore
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-
-            <div className="col-12 col-sm-6 col-lg-3">
-              <div className="card border-0 shadow-sm rounded-4 h-100">
-                <div className="card-body text-center p-4">
-                  <div className="display-4">🌸</div>
-                  <h5 className="fw-bold mt-3">Fragrance</h5>
-                  <p className="text-secondary">
-                    Fresh and beautiful fragrances
-                  </p>
-
-                  <Link
-                    to="/products"
-                    className="btn btn-outline-dark"
-                  >
-                    Explore
-                  </Link>
-                </div>
-              </div>
-            </div>
-
+          <div className="display-4">
+            {category.icon}
           </div>
+
+          <h5 className="fw-bold mt-3">
+            {category.category_name}
+          </h5>
+
+          <p className="text-secondary">
+            {category.description}
+          </p>
+
+          <button
+            className="btn btn-outline-dark"
+            onClick={() =>
+              navigate(
+                `/products?category=${encodeURIComponent(
+                  category.category_name
+                )}`
+              )
+            }
+          >
+            Explore
+          </button>
+
         </div>
-      </section>
 
+      </div>
 
-      {/* FEATURED PRODUCTS */}
-      <section className="bg-light py-5">
-        <div className="container py-4">
+    </div>
 
-          <div className="text-center mb-5">
-            <p className="text-uppercase text-secondary fw-bold">
-              Our Picks
-            </p>
+  ))}
 
-            <h2 className="fw-bold">
-              Featured Products
-            </h2>
-          </div>
-
-
-          <div className="row g-4">
-
-            {/* Product 1 */}
-            <div className="col-12 col-sm-6 col-lg-3">
-              <div className="card border-0 shadow-sm h-100">
-
-                <div className="bg-secondary-subtle text-center py-5 display-3">
-                  💄
-                </div>
-
-                <div className="card-body">
-                  <small className="text-secondary">
-                    MAKEUP
-                  </small>
-
-                  <h5 className="fw-bold mt-2">
-                    Matte Lipstick
-                  </h5>
-
-                  <p className="text-secondary">
-                    Smooth long-lasting finish
-                  </p>
-
-                  <div className="d-flex justify-content-between align-items-center">
-                    <strong>$19.99</strong>
-
-                    <button className="btn btn-dark btn-sm">
-                      Add to Cart
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-
-            {/* Product 2 */}
-            <div className="col-12 col-sm-6 col-lg-3">
-              <div className="card border-0 shadow-sm h-100">
-
-                <div className="bg-success-subtle text-center py-5 display-3">
-                  🧴
-                </div>
-
-                <div className="card-body">
-                  <small className="text-secondary">
-                    SKINCARE
-                  </small>
-
-                  <h5 className="fw-bold mt-2">
-                    Vitamin C Serum
-                  </h5>
-
-                  <p className="text-secondary">
-                    Daily brightening serum
-                  </p>
-
-                  <div className="d-flex justify-content-between align-items-center">
-                    <strong>$24.99</strong>
-
-                    <button className="btn btn-dark btn-sm">
-                      Add to Cart
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-
-            {/* Product 3 */}
-            <div className="col-12 col-sm-6 col-lg-3">
-              <div className="card border-0 shadow-sm h-100">
-
-                <div className="bg-warning-subtle text-center py-5 display-3">
-                  💇
-                </div>
-
-                <div className="card-body">
-                  <small className="text-secondary">
-                    HAIRCARE
-                  </small>
-
-                  <h5 className="fw-bold mt-2">
-                    Hair Serum
-                  </h5>
-
-                  <p className="text-secondary">
-                    Smooth and shiny hair
-                  </p>
-
-                  <div className="d-flex justify-content-between align-items-center">
-                    <strong>$17.99</strong>
-
-                    <button className="btn btn-dark btn-sm">
-                      Add to Cart
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-
-            {/* Product 4 */}
-            <div className="col-12 col-sm-6 col-lg-3">
-              <div className="card border-0 shadow-sm h-100">
-
-                <div className="bg-info-subtle text-center py-5 display-3">
-                  🌸
-                </div>
-
-                <div className="card-body">
-                  <small className="text-secondary">
-                    FRAGRANCE
-                  </small>
-
-                  <h5 className="fw-bold mt-2">
-                    Bloom Perfume
-                  </h5>
-
-                  <p className="text-secondary">
-                    Fresh floral fragrance
-                  </p>
-
-                  <div className="d-flex justify-content-between align-items-center">
-                    <strong>$29.99</strong>
-
-                    <button className="btn btn-dark btn-sm">
-                      Add to Cart
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-          </div>
-
+</div>
         </div>
       </section>
 
