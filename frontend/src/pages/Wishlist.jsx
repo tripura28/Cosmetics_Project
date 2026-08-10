@@ -15,7 +15,7 @@ function Wishlist() {
 
     if (!customerId) {
       alert("Please login first.");
-      navigate("/login");
+      navigate("/choose-role");
       return;
     }
 

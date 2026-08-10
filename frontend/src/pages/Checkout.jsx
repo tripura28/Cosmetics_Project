@@ -26,7 +26,7 @@ const [grandTotal, setGrandTotal] = useState(0);
     if (!customerId) {
 
       alert("Please login first.");
-      navigate("/login");
+      navigate("/choose-role");
       return;
 
     }

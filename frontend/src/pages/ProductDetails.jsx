@@ -37,69 +37,25 @@ if (!isLoggedIn && !isAdminLoggedIn) {
 
   async function handleAddToCart() {
 
-    const customerId = localStorage.getItem("customerId");
-
-    try {
-
-      const response = await fetch("http://127.0.0.1:5000/add-to-cart", {
-
-        method: "POST",
-
-        headers: {
-          "Content-Type": "application/json",
-        },
-
-        body: JSON.stringify({
-
-          customer_id: customerId,
-          product_id: product.product_id,
-
-        }),
-
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-
-        alert(result.message);
-
-      } else {
-
-        alert(result.error);
-
-      }
-
-    } catch (error) {
-
-      console.error(error);
-      alert("Something went wrong");
-
-    }
-
-  }
-
-  if (!product) {
-    return (
-      <>
-        <Navbar />
-        <div className="container text-center py-5">
-          <h3>Loading Product...</h3>
-        </div>
-      </>
-    );
-  }
-
-async function handleAddToWishlist() {
-
   const customerId = localStorage.getItem("customerId");
+  const isAdminLoggedIn = localStorage.getItem("isAdminLoggedIn");
+
+  if (isAdminLoggedIn && !customerId) {
+    alert("Admins cannot add products to a customer cart.");
+    return;
+  }
+
+  if (!customerId) {
+    alert("Please login as a customer to add products to cart.");
+    navigate("/choose-role");
+    return;
+  }
 
   try {
 
     const response = await fetch(
-      "http://127.0.0.1:5000/add-to-wishlist",
+      "http://127.0.0.1:5000/add-to-cart",
       {
-
         method: "POST",
 
         headers: {
@@ -107,12 +63,9 @@ async function handleAddToWishlist() {
         },
 
         body: JSON.stringify({
-
           customer_id: customerId,
           product_id: product.product_id,
-
         }),
-
       }
     );
 
@@ -124,7 +77,7 @@ async function handleAddToWishlist() {
 
     } else {
 
-      alert(result.message);
+      alert(result.message || result.error);
 
     }
 
@@ -134,7 +87,60 @@ async function handleAddToWishlist() {
     alert("Something went wrong");
 
   }
+}
 
+async function handleAddToWishlist() {
+
+  const customerId = localStorage.getItem("customerId");
+  const isAdminLoggedIn = localStorage.getItem("isAdminLoggedIn");
+
+  if (isAdminLoggedIn && !customerId) {
+    alert("Admins cannot add products to a wishlist.");
+    return;
+  }
+
+  if (!customerId) {
+    alert("Please login as a customer to add products to wishlist.");
+    navigate("/choose-role");
+    return;
+  }
+
+  try {
+
+    const response = await fetch(
+      "http://127.0.0.1:5000/add-to-wishlist",
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          customer_id: customerId,
+          product_id: product.product_id,
+        }),
+      }
+    );
+
+    const result = await response.json();
+
+    if (response.ok) {
+
+      alert(result.message);
+
+    } else {
+
+      alert(result.message || result.error);
+
+    }
+
+  } catch (error) {
+
+    console.error(error);
+    alert("Something went wrong");
+
+  }
 }
 
 

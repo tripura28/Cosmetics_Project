@@ -42,20 +42,20 @@ function Products() {
 
   const handleViewDetails = (productId) => {
 
-    const isLoggedIn = localStorage.getItem("isLoggedIn");
+  const isLoggedIn = localStorage.getItem("isLoggedIn");
+  const isAdminLoggedIn = localStorage.getItem("isAdminLoggedIn");
 
-    if (!isLoggedIn) {
+  if (!isLoggedIn && !isAdminLoggedIn) {
 
-      alert("Please login to view product details.");
+    alert("Please login to view product details.");
 
-      navigate("/login");
+    navigate("/choose-role");
 
-      return;
-    }
+    return;
+  }
 
-    navigate(`/products/${productId}`);
-
-  };
+  navigate(`/products/${productId}`);
+};
 
   async function handleAddToCart(productId) {
 
