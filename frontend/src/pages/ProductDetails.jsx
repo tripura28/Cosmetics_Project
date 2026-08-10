@@ -11,13 +11,14 @@ function ProductDetails() {
 
   useEffect(() => {
 
-    const isLoggedIn = localStorage.getItem("isLoggedIn");
+  const isLoggedIn = localStorage.getItem("isLoggedIn");
+  const isAdminLoggedIn = localStorage.getItem("isAdminLoggedIn");
 
-    if (!isLoggedIn) {
-      alert("Please login to view product details.");
-      navigate("/login");
-      return;
-    }
+if (!isLoggedIn && !isAdminLoggedIn) {
+    alert("Please login to continue.");
+    navigate("/choose-role");
+    return;
+}
 
     fetch(`http://127.0.0.1:5000/products/${id}`)
       .then((response) => response.json())

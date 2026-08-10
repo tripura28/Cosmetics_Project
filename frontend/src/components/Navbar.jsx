@@ -95,7 +95,7 @@ function Navbar() {
             {!isLoggedIn ? (
 
               <Link
-                to="/login"
+                to="/choose-role"
                 className="btn rounded-pill px-4"
                 style={{
                   backgroundColor: "#7C6EE6",

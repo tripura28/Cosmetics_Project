@@ -61,15 +61,18 @@ function Products() {
 
   const customerId = localStorage.getItem("customerId");
   const isLoggedIn = localStorage.getItem("isLoggedIn");
+  const isAdminLoggedIn = localStorage.getItem("isAdminLoggedIn");
 
-  if (!isLoggedIn) {
-
-    alert("Please login first.");
-    navigate("/login");
-    return;
-
+  if (!isLoggedIn && !isAdminLoggedIn) {
+      alert("Please login to continue.");
+      navigate("/choose-role");
+      return;
   }
-
+   if (isAdminLoggedIn) {
+    alert("Admin accounts cannot add products to the cart.");
+    return;
+  }
+  
   try {
 
     const response = await fetch(

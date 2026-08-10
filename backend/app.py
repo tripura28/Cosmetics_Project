@@ -2,6 +2,7 @@ from flask import Flask,request,jsonify
 from flask_cors import CORS
 from db import get_connection
 import bcrypt
+from decimal import Decimal
 app = Flask(__name__)
 CORS(app)
 @app.route("/register", methods=["POST"])
@@ -128,7 +129,7 @@ def get_products():
     c.category_name
 FROM products p
 JOIN categories c
-ON p.category_id = c.category_id;
+ON p.category_id = c.category_id WHERE p.product_status='Available';
         """
 
         cursor.execute(query)
@@ -322,11 +323,12 @@ def get_cart(customer_id):
             p.product_id,
             p.product_name,
             p.price,
-            p.image
+            p.image,
+            p.product_status
         FROM cart c
         JOIN products p
         ON c.product_id = p.product_id
-        WHERE c.customer_id = %s
+        WHERE c.customer_id = %s;
         """
 
         cursor.execute(query, (customer_id,))
@@ -733,16 +735,25 @@ def checkout(customer_id):
         cursor.execute(cart_query, (customer_id,))
         items = cursor.fetchall()
 
-        total = 0
+        subtotal = Decimal("0.00")
 
         for item in items:
-            total += item["price"] * item["quantity"]
+            subtotal += item["price"] * item["quantity"]
+
+        shipping_fee = Decimal("50.00") if subtotal > 0 else Decimal("0.00")
+
+        tax = subtotal * Decimal("0.18")
+
+        grand_total = subtotal + shipping_fee + tax
 
         return jsonify({
-            "customer": customer,
-            "items": items,
-            "total": total
-        })
+        "customer": customer,
+        "items": items,
+        "subtotal": float(subtotal),
+        "shipping_fee": float(shipping_fee),
+        "tax": float(tax),
+        "grand_total": float(grand_total)
+    })
 
     except Exception as e:
 
@@ -802,11 +813,16 @@ def place_order():
         # Calculate Total
         # ==========================
 
-        total_amount = 0
+        subtotal = 0
 
         for item in cart_items:
+            subtotal += item["price"] * item["quantity"]
 
-            total_amount += item["price"] * item["quantity"]
+        shipping_fee = 50 if subtotal > 0 else 0
+
+        tax = subtotal * 0.18
+
+        total_amount = subtotal + shipping_fee + tax
 
         # ==========================
         # Create Order
@@ -999,6 +1015,228 @@ def order_details(order_id):
 
         if conn:
             conn.close()
+
+@app.route("/admin-register", methods=["POST"])
+def admin_register():
+
+    data = request.get_json()
+
+    admin_name = data.get("admin_name")
+    admin_email = data.get("admin_email")
+    admin_password = data.get("admin_password")
+
+    hashed_password = bcrypt.hashpw(
+        admin_password.encode("utf-8"),
+        bcrypt.gensalt()
+    ).decode("utf-8")
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        query = """
+        INSERT INTO admin
+        (
+            admin_name,
+            email,
+            password
+        )
+        VALUES
+        (
+            %s,
+            %s,
+            %s
+        )
+        """
+
+        cursor.execute(
+            query,
+            (
+                admin_name,
+                admin_email,
+                hashed_password
+            )
+        )
+
+        conn.commit()
+
+        return jsonify({
+            "message": "Admin registered successfully"
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+@app.route("/admin-login", methods=["POST"])
+def admin_login():
+
+    data = request.get_json()
+
+    admin_email = data.get("admin_email")
+    admin_password = data.get("admin_password")
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        query = """
+        SELECT *
+        FROM admin
+        WHERE email = %s
+        """
+
+        cursor.execute(query, (admin_email,))
+        admin = cursor.fetchone()
+
+        if not admin:
+
+            return jsonify({
+                "message": "Admin not found"
+            }), 404
+
+        if bcrypt.checkpw(
+            admin_password.encode("utf-8"),
+            admin["password"].encode("utf-8")
+        ):
+
+            return jsonify({
+                "message": "Admin Login Successful",
+                "admin_id": admin["admin_id"],
+                "admin_name": admin["admin_name"],
+                "admin_email": admin["email"]
+            })
+
+        return jsonify({
+            "message": "Invalid Password"
+        }), 401
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+@app.route("/admin/dashboard", methods=["GET"])
+def admin_dashboard():
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Total Products
+        cursor.execute("SELECT COUNT(*) AS total_products FROM products")
+        products = cursor.fetchone()["total_products"]
+
+        # Total Categories
+        cursor.execute("SELECT COUNT(*) AS total_categories FROM categories")
+        categories = cursor.fetchone()["total_categories"]
+
+        # Total Customers
+        cursor.execute("SELECT COUNT(*) AS total_customers FROM customers")
+        customers = cursor.fetchone()["total_customers"]
+
+        # Total Orders
+        cursor.execute("SELECT COUNT(*) AS total_orders FROM orders")
+        orders = cursor.fetchone()["total_orders"]
+
+        return jsonify({
+            "products": products,
+            "categories": categories,
+            "customers": customers,
+            "orders": orders
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+@app.route("/admin/products/<int:product_id>", methods=["PUT"])
+def update_product_status(product_id):
+
+    data = request.get_json()
+
+    status = data.get("product_status")
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            UPDATE products
+            SET product_status = %s
+            WHERE product_id = %s
+            """,
+            (status, product_id)
+        )
+
+        conn.commit()
+
+        return jsonify({
+            "message": f"Product {status.lower()} successfully"
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+
+
 
 
 if __name__ == "__main__":

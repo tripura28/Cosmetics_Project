@@ -74,9 +74,15 @@ function Cart() {
   }
 
   const subtotal = cartItems.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0
-  );
+  (total, item) => total + item.price * item.quantity,
+  0
+);
+
+const shippingFee = subtotal > 0 ? 50 : 0;
+
+const tax = subtotal * 0.18;
+
+const total = subtotal + shippingFee + tax;
   async function updateQuantity(cartId, action) {
 
   try {
@@ -201,13 +207,23 @@ function Cart() {
 
                         <div className="col-md-4">
 
-                          <h5>{item.product_name}</h5>
+                        <h5>{item.product_name}</h5>
 
-                          <p className="text-secondary mb-0">
-                            ₹{item.price}
-                          </p>
+                        <p className="text-secondary mb-0">
+                          ₹{item.price}
+                        </p>
 
-                        </div>
+                        {item.product_status === "Unavailable" && (
+
+                          <div className="alert alert-danger py-2 mt-2 mb-0">
+
+                            This product is no longer available.
+
+                          </div>
+
+                        )}
+
+                          </div>
 
                         <div className="col-md-2">
 
@@ -216,6 +232,7 @@ function Cart() {
                         <button
                           className="btn btn-outline-secondary btn-sm"
                           onClick={() => updateQuantity(item.cart_id, "decrease")}
+                          disabled={item.product_status === "Unavailable"}
                         >
                           −
                         </button>
@@ -227,6 +244,7 @@ function Cart() {
                         <button
                           className="btn btn-outline-secondary btn-sm"
                           onClick={() => updateQuantity(item.cart_id, "increase")}
+                          disabled={item.product_status === "Unavailable"}
                         >
                           +
                         </button>
@@ -294,14 +312,25 @@ function Cart() {
                   <div className="d-flex justify-content-between mb-3">
 
                     <span className="text-secondary">
-                      Shipping
+                      Shipping Fee
                     </span>
 
                     <span>
-                      FREE
+                      ₹{shippingFee.toFixed(2)}
                     </span>
 
                   </div>
+                  <div className="d-flex justify-content-between mb-3">
+
+                  <span className="text-secondary">
+                    GST (18%)
+                  </span>
+
+                  <span>
+                    ₹{tax.toFixed(2)}
+                  </span>
+
+                </div>
 
                   <hr />
 
@@ -312,18 +341,31 @@ function Cart() {
                     </strong>
 
                     <strong>
-                      ₹{subtotal}
-                    </strong>
+                    ₹{total.toFixed(2)}
+                  </strong>
 
                   </div>
 
                   <div className="d-grid">
 
-                   
+                   {cartItems.some(item => item.product_status === "Unavailable") && (
+
+                      <div className="alert alert-warning">
+
+                        Remove unavailable products from your cart before proceeding to checkout.
+
+                      </div>
+
+                    )}
 
                   <button
                     className="btn btn-dark btn-lg"
-                    disabled={cartItems.length === 0}
+                    disabled={
+                      cartItems.length === 0 ||
+                      cartItems.some(
+                        item => item.product_status === "Unavailable"
+                      )
+                    }
                     onClick={() => navigate("/checkout")}
                   >
                     Proceed to Checkout

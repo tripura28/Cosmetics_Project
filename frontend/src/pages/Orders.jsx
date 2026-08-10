@@ -106,7 +106,21 @@ function Orders() {
 
                         <strong>Status</strong>
 
-                        <p>{order.order_status}</p>
+                        <p>
+                        <span
+                          className={`badge ${
+                            order.order_status === "Delivered"
+                              ? "bg-success"
+                              : order.order_status === "Confirmed"
+                              ? "bg-primary"
+                              : order.order_status === "Cancelled"
+                              ? "bg-danger"
+                              : "bg-warning text-dark"
+                          }`}
+                        >
+                          {order.order_status}
+                        </span>
+                      </p>
 
                       </div>
 
@@ -124,11 +138,11 @@ function Orders() {
 
                       <div className="col-md-2">
 
-                        <strong>Total</strong>
+                        <strong>Total Paid</strong>
 
-                        <p>
+                        <p className="fw-bold text-success">
 
-                          ₹{order.total_amount}
+                          ₹{Number(order.total_amount).toFixed(2)}
 
                         </p>
 

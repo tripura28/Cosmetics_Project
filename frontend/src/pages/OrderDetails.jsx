@@ -45,6 +45,16 @@ function OrderDetails() {
   }
 
   const order = items[0];
+  const subtotal = items.reduce(
+  (total, item) => total + item.price * item.quantity,
+  0
+);
+
+const shippingFee = subtotal > 0 ? 50 : 0;
+
+const tax = subtotal * 0.18;
+
+const grandTotal = subtotal + shippingFee + tax;
 
   return (
 
@@ -146,13 +156,54 @@ function OrderDetails() {
 
               }
 
-              <div className="text-end mt-4">
+              <hr />
 
-                <h4>
+              <div
+                className="ms-auto"
+                style={{ maxWidth: "350px" }}
+              >
 
-                  Total : ₹{order.total_amount}
+                <div className="d-flex justify-content-between mb-2">
 
-                </h4>
+                  <span>Subtotal</span>
+
+                  <span>₹{subtotal.toFixed(2)}</span>
+
+                </div>
+
+                <div className="d-flex justify-content-between mb-2">
+
+                  <span>Shipping Fee</span>
+
+                  <span>₹{shippingFee.toFixed(2)}</span>
+
+                </div>
+
+                <div className="d-flex justify-content-between mb-2">
+
+                  <span>GST (18%)</span>
+
+                  <span>₹{tax.toFixed(2)}</span>
+
+                </div>
+
+                <hr />
+
+                <div className="d-flex justify-content-between">
+
+                  <h5 className="fw-bold">
+
+                    Total Paid
+
+                  </h5>
+
+                  <h5 className="fw-bold text-success">
+
+                   ₹{Number(order.total_amount).toFixed(2)}
+
+                  </h5>
+
+                </div>
 
               </div>
 

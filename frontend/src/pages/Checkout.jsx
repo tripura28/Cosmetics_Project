@@ -10,7 +10,10 @@ function Checkout() {
 
   const [customer, setCustomer] = useState({});
   const [items, setItems] = useState([]);
-  const [total, setTotal] = useState(0);
+ const [subtotal, setSubtotal] = useState(0);
+const [shippingFee, setShippingFee] = useState(0);
+const [tax, setTax] = useState(0);
+const [grandTotal, setGrandTotal] = useState(0);
 
   const [houseNo, setHouseNo] = useState("");
   const [street, setStreet] = useState("");
@@ -29,19 +32,30 @@ function Checkout() {
     }
 
     fetch(`http://127.0.0.1:5000/checkout/${customerId}`)
-      .then((response) => response.json())
-      .then((data) => {
+    .then(async (response) => {
 
-        setCustomer(data.customer);
-        setItems(data.items);
-        setTotal(data.total);
+    const data = await response.json();
 
-      })
-      .catch((error) => {
+    console.log("Checkout response:", data);
 
-        console.error(error);
+    if (!response.ok) {
+      throw new Error(data.error || data.message || "Checkout failed");
+    }
 
-      });
+    setCustomer(data.customer || {});
+    setItems(data.items || []);
+    setSubtotal(Number(data.subtotal) || 0);
+    setShippingFee(Number(data.shipping_fee) || 0);
+    setTax(Number(data.tax) || 0);
+    setGrandTotal(Number(data.grand_total) || 0);
+
+  })
+  .catch((error) => {
+
+    console.error("Checkout error:", error);
+    alert(error.message);
+
+  });
 
   }, [customerId, navigate]);
 
@@ -299,14 +313,32 @@ async function handlePlaceOrder() {
 
                   ))}
 
-                  <div className="d-flex justify-content-between">
+                  <div className="d-flex justify-content-between mb-2">
 
-                    <span>
-                      Shipping
-                    </span>
+                    <span>Subtotal</span>
 
                     <strong>
-                      FREE
+                      ₹{subtotal.toFixed(2)}
+                    </strong>
+
+                  </div>
+
+                  <div className="d-flex justify-content-between mb-2">
+
+                    <span>Shipping Fee</span>
+
+                    <strong>
+                      ₹{shippingFee.toFixed(2)}
+                    </strong>
+
+                  </div>
+
+                  <div className="d-flex justify-content-between mb-2">
+
+                    <span>GST (18%)</span>
+
+                    <strong>
+                      ₹{tax.toFixed(2)}
                     </strong>
 
                   </div>
@@ -317,11 +349,13 @@ async function handlePlaceOrder() {
 
                     <strong>Total</strong>
 
-                    <strong>
-                      ₹{total}
+                    <strong className="text-success">
+                      ₹{grandTotal.toFixed(2)}
                     </strong>
 
                   </div>
+
+                  <hr />   
 
                   <div className="d-grid gap-2">
 
