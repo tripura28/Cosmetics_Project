@@ -31,6 +31,8 @@ const [grandTotal, setGrandTotal] = useState(0);
 
     }
 
+    
+
     fetch(`http://127.0.0.1:5000/checkout/${customerId}`)
     .then(async (response) => {
 
@@ -367,11 +369,33 @@ async function handlePlaceOrder() {
                     </button>
 
                     <button
-                      className="btn btn-dark"
-                      onClick={handlePlaceOrder}
-                    >
-                      Place Order
-                    </button>
+                        className="btn btn-dark"
+                        onClick={() => {
+
+                          if (
+                            !houseNo.trim() ||
+                            !street.trim() ||
+                            !city.trim() ||
+                            !state.trim() ||
+                            !pincode.trim()
+                          ) {
+
+                            alert("Please fill the delivery address.");
+
+                            return;
+                          }
+
+                          navigate("/payment", {
+                            state: {
+                              shippingAddress:
+                                `${houseNo}, ${street}, ${city}, ${state} - ${pincode}`
+                            }
+                          });
+
+                        }}
+                      >
+                        Proceed to Payment
+                      </button>
 
                   </div>
 

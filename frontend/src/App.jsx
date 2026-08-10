@@ -16,6 +16,12 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminRegister from "./pages/AdminRegister";
 import AdminDashboard from "./pages/AdminDashboard";
 import ManageProducts from "./pages/ManageProducts";
+import AdminEditProduct from "./pages/AdminEditProduct";
+import AdminAddProduct from "./pages/AdminAddProduct";
+import ManageOrders from "./pages/ManageOrders";
+import ManageCustomers from "./pages/ManageCustomers";
+import ManageCategories from "./pages/ManageCategories";
+import Payment from "./pages/Payment";
 
 function App() {
   return (
@@ -57,6 +63,33 @@ function App() {
   <Route
     path="/admin/products"
     element={<ManageProducts />}
+/>
+<Route
+  path="/admin/products/add"
+  element={<AdminAddProduct />}
+/>
+
+<Route
+  path="/admin/products/edit/:productId"
+  element={<AdminEditProduct />}
+/>
+<Route
+  path="/admin/orders"
+  element={<ManageOrders />}
+/>
+<Route
+  path="/admin/customers"
+  element={<ManageCustomers />}
+/>
+
+<Route
+  path="/admin/categories"
+  element={<ManageCategories />}
+/>
+
+<Route
+  path="/payment"
+  element={<Payment />}
 />
 
 </Routes>

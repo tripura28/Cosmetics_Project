@@ -8,6 +8,17 @@ function ProductDetails() {
   const navigate = useNavigate();
 
   const [product, setProduct] = useState(null);
+  const [quantity, setQuantity] = useState(1);
+
+  const detailTextStyle = {
+    fontSize: "1.05rem",
+    lineHeight: 1.7,
+  };
+
+  const detailHeadingStyle = {
+    fontSize: "1.7rem",
+    lineHeight: 1.2,
+  };
 
   useEffect(() => {
 
@@ -30,6 +41,20 @@ if (!isLoggedIn && !isAdminLoggedIn) {
       });
 
   }, [id, navigate]);
+
+  function handleQuantityChange(type) {
+    setQuantity((prev) => {
+      if (type === "inc") {
+        return prev + 1;
+      }
+
+      if (type === "dec") {
+        return prev > 1 ? prev - 1 : 1;
+      }
+
+      return prev;
+    });
+  }
 
   // ===========================
   // Add to Cart Function
@@ -65,6 +90,7 @@ if (!isLoggedIn && !isAdminLoggedIn) {
         body: JSON.stringify({
           customer_id: customerId,
           product_id: product.product_id,
+          quantity: quantity,
         }),
       }
     );
@@ -73,7 +99,7 @@ if (!isLoggedIn && !isAdminLoggedIn) {
 
     if (response.ok) {
 
-      alert(result.message);
+      alert(result.message || "Item added to cart successfully.");
 
     } else {
 
@@ -145,6 +171,19 @@ async function handleAddToWishlist() {
 
 
 
+  if (!product) {
+    return (
+      <>
+        <Navbar />
+        <section className="bg-light py-5 min-vh-100">
+          <div className="container py-5 text-center">
+            <h3 className="fw-bold">Loading product details...</h3>
+          </div>
+        </section>
+      </>
+    );
+  }
+
   return (
     <>
       <Navbar />
@@ -200,37 +239,37 @@ async function handleAddToWishlist() {
                     {product.category_name}
                   </small>
 
-                  <h1 className="fw-bold mt-3">
+                  <h2 className="fw-bold mt-3 mb-2" style={detailHeadingStyle}>
                     {product.product_name}
-                  </h1>
+                  </h2>
 
                   <div className="d-flex align-items-center gap-2 my-3">
 
-                    <span className="text-warning fs-5">
+                    <span className="text-warning fs-6">
                       ★★★★★
                     </span>
 
-                    <span className="text-secondary">
+                    <span className="text-secondary small">
                       Premium Product
                     </span>
 
                   </div>
 
-                  <h2 className="fw-bold mb-4">
+                  <h3 className="fw-bold mb-4" style={{ fontSize: "1.6rem" }}>
                     ₹{product.price}
-                  </h2>
+                  </h3>
 
-                  <p className="text-secondary lh-lg">
+                  <p className="text-secondary mb-4" style={{ whiteSpace: "pre-line", ...detailTextStyle }}>
                     {product.description}
                   </p>
 
                   <hr className="my-4" />
 
-                  <p>
+                  <p style={detailTextStyle}>
                     <strong>Stock :</strong> {product.stock}
                   </p>
 
-                  <p>
+                  <p style={detailTextStyle}>
                     <strong>Status :</strong> {product.product_status}
                   </p>
 
@@ -249,6 +288,7 @@ async function handleAddToWishlist() {
                       <button
                         className="btn btn-outline-dark"
                         type="button"
+                        onClick={() => handleQuantityChange("dec")}
                       >
                         -
                       </button>
@@ -256,13 +296,14 @@ async function handleAddToWishlist() {
                       <input
                         type="text"
                         className="form-control text-center"
-                        value="1"
+                        value={quantity}
                         readOnly
                       />
 
                       <button
                         className="btn btn-outline-dark"
                         type="button"
+                        onClick={() => handleQuantityChange("inc")}
                       >
                         +
                       </button>

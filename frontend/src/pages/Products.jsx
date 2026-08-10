@@ -93,7 +93,7 @@ function Products() {
 
     if (response.ok) {
 
-      alert(result.message);
+      alert(result.message || "Item added to cart successfully.");
 
     } else {
 
@@ -265,7 +265,11 @@ function Products() {
                 key={product.product_id}
               >
 
-                <div className="card border-0 shadow-sm h-100">
+                <div
+                  className="card border-0 shadow-sm h-100 cursor-pointer"
+                  onClick={() => handleViewDetails(product.product_id)}
+                  style={{ cursor: "pointer" }}
+                >
 
                   {/* Product Image */}
                   <img
@@ -291,8 +295,8 @@ function Products() {
                       {product.product_name}
                     </h5>
 
-                    <p className="text-secondary">
-                      {product.description}
+                    <p className="text-secondary small mb-3">
+                      Tap to view full details and description.
                     </p>
 
                     <div className="mt-auto">

@@ -8,6 +8,17 @@ function OrderDetails() {
 
   const [items, setItems] = useState([]);
 
+  const companyInfo = {
+    name: "GlowCart Cosmetics",
+    email: "support@glowandglam.com",
+    phone: "+91 98765 43210",
+    address: "123 Beauty Street, Mumbai, India"
+  };
+
+  const handleDownloadPdf = () => {
+    window.print();
+  };
+
   useEffect(() => {
 
     fetch(`http://127.0.0.1:5000/order-details/${orderId}`)
@@ -62,19 +73,116 @@ const grandTotal = subtotal + shippingFee + tax;
 
       <Navbar />
 
+      <style>
+        {`
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+
+            .print-area, .print-area * {
+              visibility: visible;
+            }
+
+            .print-area {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+            }
+
+            .no-print {
+              display: none !important;
+            }
+
+            .navbar {
+              display: none !important;
+            }
+          }
+        `}
+      </style>
+
       <section className="bg-light min-vh-100 py-5">
 
         <div className="container">
 
-          <div className="card border-0 shadow rounded-4">
+          <div className="card border-0 shadow rounded-4 print-area">
 
             <div className="card-body p-4">
 
-              <h2 className="fw-bold mb-4">
+              <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 no-print">
 
-                Order #{orderId}
+                <div>
 
-              </h2>
+                  <h2 className="fw-bold mb-1">
+
+                    Order #{orderId}
+
+                  </h2>
+
+                  <p className="text-muted mb-0">
+                    Download this order receipt as a PDF.
+                  </p>
+
+                </div>
+
+                <button
+                  type="button"
+                  className="btn btn-dark mt-3 mt-md-0"
+                  onClick={handleDownloadPdf}
+                >
+                  Download PDF
+                </button>
+
+              </div>
+
+              <div className="border rounded-4 p-4 mb-4 bg-white">
+
+                <div className="row align-items-start">
+
+                  <div className="col-md-8">
+
+                    <h4 className="fw-bold mb-2">
+                      {companyInfo.name}
+                    </h4>
+
+                    <p className="mb-1">
+                      {companyInfo.address}
+                    </p>
+
+                    <p className="mb-1">
+                      Email: {companyInfo.email}
+                    </p>
+
+                    <p className="mb-0">
+                      Phone: {companyInfo.phone}
+                    </p>
+
+                  </div>
+
+                  <div className="col-md-4 text-md-end">
+
+                    <h5 className="fw-bold mb-2">
+                      Order Receipt
+                    </h5>
+
+                    <p className="mb-1">
+                      Order #: {orderId}
+                    </p>
+
+                    <p className="mb-1">
+                        Date: {new Date(order.order_date).toLocaleDateString("en-GB")}
+                      </p>
+
+                    <p className="mb-0">
+                      Status: {order.order_status}
+                    </p>
+
+                  </div>
+
+                </div>
+
+              </div>
 
               <p>
 

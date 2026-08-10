@@ -7,10 +7,13 @@ function Navbar() {
   const isLoggedIn = localStorage.getItem("isLoggedIn");
   const customerName = localStorage.getItem("customerName");
 
-  function handleLogout() {
-    localStorage.clear();
-    navigate("/login");
-  }
+const handleLogout = () => {
+
+  localStorage.removeItem("isLoggedIn");
+  localStorage.removeItem("customerId");
+
+  navigate("/choose-role");
+};
 
   return (
     <nav className="navbar navbar-expand-lg bg-white shadow-sm sticky-top py-3">

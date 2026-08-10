@@ -128,11 +128,9 @@ function Orders() {
 
                         <strong>Date</strong>
 
-                        <p>
-
-                          {new Date(order.order_date).toLocaleDateString()}
-
-                        </p>
+                        <p className="mb-1">
+                        {new Date(order.order_date).toLocaleDateString("en-GB")}
+                      </p>
 
                       </div>
 

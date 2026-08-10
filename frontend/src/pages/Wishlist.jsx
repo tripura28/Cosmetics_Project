@@ -179,7 +179,11 @@ function Wishlist() {
                     className="row align-items-center border-bottom py-3"
                   >
 
-                    <div className="col-md-2">
+                    <div
+                      className="col-md-2"
+                      onClick={() => navigate(`/products/${item.product_id}`)}
+                      style={{ cursor: "pointer" }}
+                    >
 
                       <img
                         src={`/images/${item.image}`}
@@ -194,7 +198,11 @@ function Wishlist() {
 
                     </div>
 
-                    <div className="col-md-4">
+                    <div
+                      className="col-md-4"
+                      onClick={() => navigate(`/products/${item.product_id}`)}
+                      style={{ cursor: "pointer" }}
+                    >
 
                       <h5>{item.product_name}</h5>
 

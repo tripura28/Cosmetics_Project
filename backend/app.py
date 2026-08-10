@@ -1,10 +1,25 @@
+import os
 from flask import Flask,request,jsonify
 from flask_cors import CORS
 from db import get_connection
 import bcrypt
 from decimal import Decimal
+from werkzeug.utils import secure_filename
+import razorpay
+
 app = Flask(__name__)
 CORS(app)
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
+
+razorpay_client = razorpay.Client(
+    auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET)
+)
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+UPLOAD_FOLDER = os.path.join(PROJECT_ROOT, "frontend", "public", "images")
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 @app.route("/register", methods=["POST"])
 def register():
 
@@ -243,6 +258,7 @@ def add_to_cart():
 
     customer_id = data.get("customer_id")
     product_id = data.get("product_id")
+    requested_quantity = data.get("quantity", 1)
 
     conn = None
     cursor = None
@@ -264,31 +280,34 @@ def add_to_cart():
 
         cart_item = cursor.fetchone()
 
+        message = "Item added to cart successfully."
+
         if cart_item:
 
             update_query = """
             UPDATE cart
-            SET quantity = quantity + 1
+            SET quantity = quantity + %s
             WHERE customer_id = %s
             AND product_id = %s
             """
 
-            cursor.execute(update_query, (customer_id, product_id))
+            cursor.execute(update_query, (requested_quantity, customer_id, product_id))
+            message = "Item is already in your cart. Quantity increased."
 
         else:
 
             insert_query = """
             INSERT INTO cart
             (customer_id, product_id, quantity)
-            VALUES (%s, %s, 1)
+            VALUES (%s, %s, %s)
             """
 
-            cursor.execute(insert_query, (customer_id, product_id))
+            cursor.execute(insert_query, (customer_id, product_id, requested_quantity))
 
         conn.commit()
 
         return jsonify({
-            "message": "Product added to cart"
+            "message": message
         })
 
     except Exception as e:
@@ -1191,12 +1210,8 @@ def admin_dashboard():
         if conn:
             conn.close()
 
-@app.route("/admin/products/<int:product_id>", methods=["PUT"])
-def update_product_status(product_id):
-
-    data = request.get_json()
-
-    status = data.get("product_status")
+@app.route("/admin/products", methods=["POST"])
+def create_product():
 
     conn = None
     cursor = None
@@ -1206,20 +1221,235 @@ def update_product_status(product_id):
         conn = get_connection()
         cursor = conn.cursor()
 
-        cursor.execute(
-            """
-            UPDATE products
-            SET product_status = %s
-            WHERE product_id = %s
-            """,
-            (status, product_id)
-        )
+        if request.content_type and "multipart/form-data" in request.content_type:
+            data = request.form.to_dict()
+            image_file = request.files.get("image")
+        else:
+            data = request.get_json(silent=True) or {}
+            image_file = None
+
+        required_fields = [
+            "product_name",
+            "description",
+            "category_id",
+            "price",
+            "stock"
+        ]
+
+        missing = [field for field in required_fields if not data.get(field)]
+
+        if missing:
+            return jsonify({
+                "error": f"Missing required fields: {', '.join(missing)}"
+            }), 400
+
+        image_name = None
+
+        if image_file and image_file.filename:
+            filename = secure_filename(image_file.filename)
+            if not filename:
+                return jsonify({
+                    "error": "Invalid image filename"
+                }), 400
+
+            image_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            image_file.save(image_path)
+            image_name = filename
+
+        if not image_name:
+            image_name = "no-image.jpg"
+
+        query = """
+        INSERT INTO products (
+            vendor_id,
+            category_id,
+            product_name,
+            description,
+            price,
+            stock,
+            product_status,
+            image
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """
+
+        cursor.execute(query, (
+            1,
+            int(data["category_id"]),
+            data["product_name"],
+            data["description"],
+            float(data["price"]),
+            int(data["stock"]),
+            data.get("product_status", "Available"),
+            image_name
+        ))
 
         conn.commit()
 
         return jsonify({
-            "message": f"Product {status.lower()} successfully"
+            "message": "Product added successfully"
         })
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+@app.route("/admin/products/<int:product_id>", methods=["PUT"])
+def update_product(product_id):
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        if request.content_type and "multipart/form-data" in request.content_type:
+            data = request.form.to_dict()
+            image_file = request.files.get("image")
+        else:
+            data = request.get_json(silent=True) or {}
+            image_file = None
+
+        fields = []
+        values = []
+
+        allowed_fields = [
+            "product_name",
+            "description",
+            "category_id",
+            "price",
+            "stock",
+            "product_status"
+        ]
+
+        def normalize_value(field, value):
+            if value is None:
+                return value
+
+            if field in {"category_id", "stock"}:
+                return int(value)
+
+            if field == "price":
+                return float(value)
+
+            return value
+
+        for field in allowed_fields:
+            if field in data and data[field] not in (None, ""):
+                fields.append(f"{field} = %s")
+                values.append(normalize_value(field, data[field]))
+
+        image_name = None
+
+        if image_file and image_file.filename:
+            filename = secure_filename(image_file.filename)
+            if not filename:
+                return jsonify({
+                    "error": "Invalid image filename"
+                }), 400
+
+            image_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            image_file.save(image_path)
+            image_name = filename
+
+        if image_name:
+            fields.append("image = %s")
+            values.append(image_name)
+        elif "existing_image" in data and data["existing_image"]:
+            fields.append("image = %s")
+            values.append(data["existing_image"])
+        elif "image" in data and data["image"]:
+            fields.append("image = %s")
+            values.append(data["image"])
+
+        if not fields:
+            return jsonify({
+                "message": "No changes provided"
+            }), 400
+
+        values.append(product_id)
+
+        query = f"""
+        UPDATE products
+        SET {", ".join(fields)}
+        WHERE product_id = %s
+        """
+
+        cursor.execute(query, tuple(values))
+
+        conn.commit()
+
+        return jsonify({
+            "message": "Product updated successfully"
+        })
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+@app.route("/admin/products/<int:product_id>", methods=["GET"])
+def get_admin_product(product_id):
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        query = """
+        SELECT
+            product_id,
+            vendor_id,
+            category_id,
+            product_name,
+            description,
+            price,
+            stock,
+            product_status,
+            image
+        FROM products
+        WHERE product_id = %s
+        """
+
+        cursor.execute(query, (product_id,))
+
+        product = cursor.fetchone()
+
+        if not product:
+            return jsonify({
+                "message": "Product not found"
+            }), 404
+
+        return jsonify(product)
 
     except Exception as e:
 
@@ -1235,9 +1465,857 @@ def update_product_status(product_id):
         if conn:
             conn.close()
 
+# ==========================================
+# ADMIN - GET ALL ORDERS
+# ==========================================
+
+@app.route("/admin/orders", methods=["GET"])
+def get_admin_orders():
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        query = """
+        SELECT
+            o.order_id,
+            o.customer_id,
+            c.customer_name,
+            c.email,
+            o.total_amount,
+            o.shipping_address,
+            o.order_status,
+            o.order_date
+        FROM orders o
+        JOIN customers c
+        ON o.customer_id = c.customer_id
+        ORDER BY o.order_date DESC
+        """
+
+        cursor.execute(query)
+
+        orders = cursor.fetchall()
+
+        return jsonify(orders)
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+# ==========================================
+# ADMIN - ORDER DETAILS
+# ==========================================
+
+@app.route("/admin/orders/<int:order_id>", methods=["GET"])
+def get_admin_order_details(order_id):
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        query = """
+        SELECT
+            o.order_id,
+            o.customer_id,
+            c.customer_name,
+            c.email,
+            c.phone,
+            o.total_amount,
+            o.shipping_address,
+            o.order_status,
+            o.order_date,
+
+            oi.order_item_id,
+            oi.product_id,
+            oi.quantity,
+            oi.price,
+
+            p.product_name,
+            p.image
+
+        FROM orders o
+
+        JOIN customers c
+        ON o.customer_id = c.customer_id
+
+        JOIN order_items oi
+        ON o.order_id = oi.order_id
+
+        JOIN products p
+        ON oi.product_id = p.product_id
+
+        WHERE o.order_id = %s
+        """
+
+        cursor.execute(query, (order_id,))
+
+        items = cursor.fetchall()
+
+        if not items:
+
+            return jsonify({
+                "message": "Order not found"
+            }), 404
+
+        return jsonify(items)
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
 
 
+    finally:
 
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+# ==========================================
+# ADMIN - UPDATE ORDER STATUS
+# ==========================================
+
+@app.route("/admin/orders/<int:order_id>/status", methods=["PUT"])
+def update_order_status(order_id):
+
+    data = request.get_json()
+
+    new_status = data.get("order_status")
+
+    allowed_statuses = [
+        "Pending",
+        "Confirmed",
+        "Delivered",
+        "Cancelled"
+    ]
+
+    if new_status not in allowed_statuses:
+
+        return jsonify({
+            "error": "Invalid order status"
+        }), 400
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        query = """
+        UPDATE orders
+        SET order_status = %s
+        WHERE order_id = %s
+        """
+
+        cursor.execute(
+            query,
+            (
+                new_status,
+                order_id
+            )
+        )
+
+        if cursor.rowcount == 0:
+
+            return jsonify({
+                "error": "Order not found"
+            }), 404
+
+        conn.commit()
+
+        return jsonify({
+            "message": "Order status updated successfully"
+        })
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+# ==========================================
+# ADMIN - GET ALL CUSTOMERS
+# ==========================================
+
+@app.route("/admin/customers", methods=["GET"])
+def get_admin_customers():
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        query = """
+        SELECT
+            customer_id,
+            customer_name,
+            email,
+            phone,
+            address,
+            is_active,
+            created_at
+        FROM customers
+        ORDER BY created_at DESC
+        """
+
+        cursor.execute(query)
+
+        customers = cursor.fetchall()
+
+        return jsonify(customers)
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+# ==========================================
+# ADMIN - UPDATE CUSTOMER STATUS
+# ==========================================
+
+@app.route("/admin/customers/<int:customer_id>/status", methods=["PUT"])
+def update_customer_status(customer_id):
+
+    data = request.get_json()
+
+    is_active = data.get("is_active")
+
+    if is_active not in [True, False]:
+        return jsonify({
+            "error": "Invalid customer status"
+        }), 400
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        query = """
+        UPDATE customers
+        SET is_active = %s
+        WHERE customer_id = %s
+        """
+
+        cursor.execute(
+            query,
+            (
+                is_active,
+                customer_id
+            )
+        )
+
+        if cursor.rowcount == 0:
+
+            return jsonify({
+                "error": "Customer not found"
+            }), 404
+
+        conn.commit()
+
+        return jsonify({
+            "message": "Customer status updated successfully"
+        })
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+@app.route("/admin/categories", methods=["GET"])
+def get_admin_categories():
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT
+                category_id,
+                category_name,
+                description
+            FROM categories
+            ORDER BY category_id ASC
+        """)
+
+        categories = cursor.fetchall()
+
+        return jsonify(categories)
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+@app.route("/admin/categories", methods=["POST"])
+def add_admin_category():
+
+    data = request.get_json()
+
+    category_name = data.get("category_name")
+    description = data.get("description", "")
+
+    if not category_name or not category_name.strip():
+
+        return jsonify({
+            "error": "Category name is required"
+        }), 400
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO categories
+            (category_name, description)
+            VALUES (%s, %s)
+        """, (
+            category_name.strip(),
+            description
+        ))
+
+        conn.commit()
+
+        return jsonify({
+            "message": "Category added successfully"
+        }), 201
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+@app.route("/admin/categories/<int:category_id>", methods=["PUT"])
+def update_admin_category(category_id):
+
+    data = request.get_json()
+
+    category_name = data.get("category_name")
+    description = data.get("description", "")
+
+    if not category_name or not category_name.strip():
+
+        return jsonify({
+            "error": "Category name is required"
+        }), 400
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            UPDATE categories
+            SET category_name = %s,
+                description = %s
+            WHERE category_id = %s
+        """, (
+            category_name.strip(),
+            description,
+            category_id
+        ))
+
+        if cursor.rowcount == 0:
+
+            return jsonify({
+                "error": "Category not found"
+            }), 404
+
+        conn.commit()
+
+        return jsonify({
+            "message": "Category updated successfully"
+        })
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+@app.route("/admin/categories/<int:category_id>", methods=["DELETE"])
+def delete_admin_category(category_id):
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            DELETE FROM categories
+            WHERE category_id = %s
+        """, (category_id,))
+
+        if cursor.rowcount == 0:
+
+            return jsonify({
+                "error": "Category not found"
+            }), 404
+
+        conn.commit()
+
+        return jsonify({
+            "message": "Category deleted successfully"
+        })
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+@app.route("/create-razorpay-order", methods=["POST"])
+def create_razorpay_order():
+
+    conn = None
+    cursor = None
+
+    try:
+
+        data = request.get_json()
+
+        customer_id = data.get("customer_id")
+
+        if not customer_id:
+            return jsonify({
+                "error": "Customer ID is required"
+            }), 400
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        query = """
+        SELECT
+            p.price,
+            c.quantity
+        FROM cart c
+        JOIN products p
+        ON c.product_id = p.product_id
+        WHERE c.customer_id = %s
+        """
+
+        cursor.execute(query, (customer_id,))
+
+        items = cursor.fetchall()
+
+        if not items:
+            return jsonify({
+                "error": "Your cart is empty"
+            }), 400
+
+        subtotal = sum(
+            float(item["price"]) * item["quantity"]
+            for item in items
+        )
+
+        shipping_fee = 50 if subtotal > 0 else 0
+
+        tax = subtotal * 0.18
+
+        grand_total = subtotal + shipping_fee + tax
+
+        # Razorpay expects paise
+        amount_in_paise = int(round(grand_total * 100))
+
+        razorpay_order = razorpay_client.order.create({
+            "amount": amount_in_paise,
+            "currency": "INR",
+            "receipt": f"glowcart_{customer_id}",
+            "payment_capture": 1
+        })
+
+        return jsonify({
+
+            "key_id": RAZORPAY_KEY_ID,
+
+            "razorpay_order_id":
+                razorpay_order["id"],
+
+            "amount": amount_in_paise,
+
+            "currency": "INR",
+
+            "subtotal": subtotal,
+
+            "shipping_fee": shipping_fee,
+
+            "tax": tax,
+
+            "grand_total": grand_total
+
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+# ==========================================
+# VERIFY RAZORPAY PAYMENT
+# ==========================================
+
+@app.route("/verify-payment", methods=["POST"])
+def verify_payment():
+
+    conn = None
+    cursor = None
+
+    try:
+
+        data = request.get_json()
+
+        customer_id = data.get("customer_id")
+        shipping_address = data.get("shipping_address")
+
+        razorpay_order_id = data.get("razorpay_order_id")
+        razorpay_payment_id = data.get("razorpay_payment_id")
+        razorpay_signature = data.get("razorpay_signature")
+
+        if not customer_id:
+            return jsonify({
+                "error": "Customer ID is required"
+            }), 400
+
+        if not shipping_address:
+            return jsonify({
+                "error": "Shipping address is required"
+            }), 400
+
+        if not razorpay_order_id or not razorpay_payment_id or not razorpay_signature:
+            return jsonify({
+                "error": "Payment details are missing"
+            }), 400
+
+        # ------------------------------------------
+        # VERIFY RAZORPAY SIGNATURE
+        # ------------------------------------------
+
+        razorpay_client.utility.verify_payment_signature({
+            "razorpay_order_id": razorpay_order_id,
+            "razorpay_payment_id": razorpay_payment_id,
+            "razorpay_signature": razorpay_signature
+        })
+
+        # ------------------------------------------
+        # DATABASE CONNECTION
+        # ------------------------------------------
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # ------------------------------------------
+        # GET CART ITEMS
+        # ------------------------------------------
+
+        cursor.execute("""
+            SELECT
+                c.product_id,
+                c.quantity,
+                p.price,
+                p.stock
+            FROM cart c
+            JOIN products p
+            ON c.product_id = p.product_id
+            WHERE c.customer_id = %s
+        """, (customer_id,))
+
+        cart_items = cursor.fetchall()
+
+        if not cart_items:
+
+            return jsonify({
+                "error": "Cart is empty"
+            }), 400
+
+        # ------------------------------------------
+        # CALCULATE TOTAL
+        # ------------------------------------------
+
+        subtotal = 0
+
+        for item in cart_items:
+
+            if item["quantity"] > item["stock"]:
+
+                return jsonify({
+                    "error": "Insufficient stock for one or more products"
+                }), 400
+
+            subtotal += (
+                float(item["price"]) *
+                item["quantity"]
+            )
+
+        shipping_fee = 50 if subtotal > 0 else 0
+
+        tax = subtotal * 0.18
+
+        grand_total = subtotal + shipping_fee + tax
+
+        # ------------------------------------------
+        # CREATE ORDER
+        # ------------------------------------------
+
+        cursor.execute("""
+            INSERT INTO orders
+            (
+                customer_id,
+                total_amount,
+                shipping_address,
+                order_status
+            )
+            VALUES
+            (
+                %s,
+                %s,
+                %s,
+                %s
+            )
+        """, (
+            customer_id,
+            grand_total,
+            shipping_address,
+            "Confirmed"
+        ))
+
+        order_id = cursor.lastrowid
+
+        # ------------------------------------------
+        # INSERT ORDER ITEMS
+        # ------------------------------------------
+
+        for item in cart_items:
+
+            cursor.execute("""
+                INSERT INTO order_items
+                (
+                    order_id,
+                    product_id,
+                    quantity,
+                    price
+                )
+                VALUES
+                (
+                    %s,
+                    %s,
+                    %s,
+                    %s
+                )
+            """, (
+                order_id,
+                item["product_id"],
+                item["quantity"],
+                item["price"]
+            ))
+
+            # Reduce stock
+
+            cursor.execute("""
+                UPDATE products
+                SET stock = stock - %s
+                WHERE product_id = %s
+            """, (
+                item["quantity"],
+                item["product_id"]
+            ))
+
+        # ------------------------------------------
+        # INSERT PAYMENT
+        # ------------------------------------------
+
+        cursor.execute("""
+            INSERT INTO payments
+            (
+                order_id,
+                transaction_id,
+                payment_method,
+                payment_status,
+                amount
+            )
+            VALUES
+            (
+                %s,
+                %s,
+                %s,
+                %s,
+                %s
+            )
+        """, (
+            order_id,
+            razorpay_payment_id,
+            "UPI",
+            "Success",
+            grand_total
+        ))
+
+        # ------------------------------------------
+        # CLEAR CART
+        # ------------------------------------------
+
+        cursor.execute("""
+            DELETE FROM cart
+            WHERE customer_id = %s
+        """, (customer_id,))
+
+        conn.commit()
+
+        return jsonify({
+
+            "message": "Payment successful and order placed",
+
+            "order_id": order_id,
+
+            "payment_id": razorpay_payment_id,
+
+            "amount": grand_total
+
+        })
+
+    except razorpay.errors.SignatureVerificationError:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+            "error": "Payment verification failed"
+        }), 400
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
 
 if __name__ == "__main__":
     app.run(debug=True)
