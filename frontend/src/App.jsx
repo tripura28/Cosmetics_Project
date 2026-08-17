@@ -22,6 +22,16 @@ import ManageOrders from "./pages/ManageOrders";
 import ManageCustomers from "./pages/ManageCustomers";
 import ManageCategories from "./pages/ManageCategories";
 import Payment from "./pages/Payment";
+import VendorRegister from "./pages/VendorRegister";
+import VendorLogin from "./pages/VendorLogin";
+import VendorDashboard from "./pages/VendorDashboard";
+import ManageVendors from "./pages/ManageVendors";
+import VendorProducts from "./pages/VendorProducts";
+import VendorOrders from "./pages/VendorOrders";
+import VendorSales from "./pages/VendorSales";
+import VendorProfile from "./pages/VendorProfile";
+import AdminVendorDetails from "./pages/AdminVendorDetails";
+
 
 function App() {
   return (
@@ -91,6 +101,53 @@ function App() {
   path="/payment"
   element={<Payment />}
 />
+
+
+
+<Route
+  path="/vendor-register"
+  element={<VendorRegister />}
+/>
+
+<Route
+  path="/vendor-login"
+  element={<VendorLogin />}
+/>
+
+<Route
+  path="/vendor-dashboard"
+  element={<VendorDashboard />}
+/>
+
+<Route
+  path="/admin/vendors"
+  element={<ManageVendors />}
+/>
+
+<Route
+  path="/vendor/products"
+  element={<VendorProducts />}
+/>
+<Route
+  path="/vendor/orders/:vendorId"
+  element={<VendorOrders />}
+/>
+
+<Route
+  path="/vendor/sales/:vendorId"
+  element={<VendorSales />}
+/>
+
+<Route
+  path="/vendor/profile/:vendorId"
+  element={<VendorProfile />}
+/>
+
+<Route
+  path="/admin/vendors/:vendorId"
+  element={<AdminVendorDetails />}
+/>
+
 
 </Routes>
 

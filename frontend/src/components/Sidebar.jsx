@@ -64,6 +64,12 @@ function Sidebar() {
       >
         📋 Orders
       </Link>
+          <Link
+      to="/admin/vendors"
+      className="text-white text-decoration-none mb-4"
+    >
+      🏪 Vendors
+    </Link>
 
       <Link
         to="/admin/customers"

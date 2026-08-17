@@ -37,17 +37,20 @@ function ChooseRole() {
             }}
           >
             Sign in to access your GlowCart account. Whether you're here to
-            explore premium beauty products or manage store operations,
-            choose the portal that best matches your role.
+            explore premium beauty products, manage your store, or handle
+            platform operations, choose the portal that best matches your role.
           </p>
 
         </div>
 
+
         <div className="row g-4 justify-content-center">
 
-          {/* Customer Card */}
+          {/* ========================= */}
+          {/* CUSTOMER CARD */}
+          {/* ========================= */}
 
-          <div className="col-md-5">
+          <div className="col-md-4">
 
             <div
               className="card border-0 shadow rounded-4 h-100"
@@ -63,7 +66,7 @@ function ChooseRole() {
               }}
             >
 
-              <div className="card-body p-5 text-center">
+              <div className="card-body p-4 p-lg-5 text-center">
 
                 <div
                   className="rounded-circle mx-auto d-flex align-items-center justify-content-center mb-4"
@@ -91,7 +94,7 @@ function ChooseRole() {
                 </p>
 
                 <button
-                  className="btn mt-4 px-5 rounded-pill"
+                  className="btn mt-4 px-4 rounded-pill"
                   style={{
                     background: "#7C6EE6",
                     color: "white"
@@ -107,9 +110,12 @@ function ChooseRole() {
 
           </div>
 
-          {/* Admin Card */}
 
-          <div className="col-md-5">
+          {/* ========================= */}
+          {/* VENDOR CARD */}
+          {/* ========================= */}
+
+          <div className="col-md-4">
 
             <div
               className="card border-0 shadow rounded-4 h-100"
@@ -125,7 +131,87 @@ function ChooseRole() {
               }}
             >
 
-              <div className="card-body p-5 text-center">
+              <div className="card-body p-4 p-lg-5 text-center">
+
+                <div
+                  className="rounded-circle mx-auto d-flex align-items-center justify-content-center mb-4"
+                  style={{
+                    width: "90px",
+                    height: "90px",
+                    background: "#F5F3FF",
+                    fontSize: "2.5rem"
+                  }}
+                >
+                  🏪
+                </div>
+
+                <h3 className="fw-bold">
+                  Vendor Portal
+                </h3>
+
+                <p className="text-secondary mt-3">
+
+                  Manage your beauty store, add and update
+                  your products, track customer orders and
+                  monitor your shop's sales and performance.
+
+                </p>
+
+                <button
+                  className="btn mt-4 px-4 rounded-pill"
+                  style={{
+                    background: "#7C6EE6",
+                    color: "white"
+                  }}
+                  onClick={() => navigate("/vendor-login")}
+                >
+                  Login as Vendor →
+                </button>
+
+                <div className="mt-3">
+
+                  <button
+                    className="btn btn-sm text-decoration-none"
+                    style={{
+                      color: "#7C6EE6",
+                      background: "transparent",
+                      border: "none"
+                    }}
+                    onClick={() => navigate("/vendor-register")}
+                  >
+                    Become a Vendor
+                  </button>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          {/* ========================= */}
+          {/* ADMIN CARD */}
+          {/* ========================= */}
+
+          <div className="col-md-4">
+
+            <div
+              className="card border-0 shadow rounded-4 h-100"
+              style={{
+                transition: "0.3s",
+                cursor: "pointer"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-8px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
+            >
+
+              <div className="card-body p-4 p-lg-5 text-center">
 
                 <div
                   className="rounded-circle mx-auto d-flex align-items-center justify-content-center mb-4"
@@ -147,14 +233,13 @@ function ChooseRole() {
 
                   Sign in to manage products,
                   categories, customer orders,
-                  inventory and administrative
-                  operations through the
-                  GlowCart dashboard.
+                  vendors, customers, inventory and
+                  administrative operations.
 
                 </p>
 
                 <button
-                  className="btn mt-4 px-5 rounded-pill"
+                  className="btn mt-4 px-4 rounded-pill"
                   style={{
                     background: "#7C6EE6",
                     color: "white"

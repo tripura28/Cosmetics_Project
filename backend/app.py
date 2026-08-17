@@ -142,9 +142,9 @@ def get_products():
     p.product_status,
     p.image,
     c.category_name
-FROM products p
-JOIN categories c
-ON p.category_id = c.category_id WHERE p.product_status='Available';
+    FROM products p
+    JOIN categories c
+    ON p.category_id = c.category_id WHERE p.product_status='Available';
         """
 
         cursor.execute(query)
@@ -1162,8 +1162,27 @@ def admin_login():
         if conn:
             conn.close()
 
-@app.route("/admin/dashboard", methods=["GET"])
-def admin_dashboard():
+# ==========================================
+# VENDOR REGISTER
+# ==========================================
+
+@app.route("/vendor-register", methods=["POST"])
+def vendor_register():
+
+    data = request.get_json()
+
+    vendor_name = data.get("vendor_name")
+    shop_name = data.get("shop_name")
+    vendor_email = data.get("vendor_email")
+    vendor_phone = data.get("vendor_phone")
+    vendor_password = data.get("vendor_password")
+    vendor_address = data.get("vendor_address")
+
+    # Check required fields
+    if not vendor_name or not shop_name or not vendor_email or not vendor_password:
+        return jsonify({
+            "error": "Vendor name, shop name, email and password are required"
+        }), 400
 
     conn = None
     cursor = None
@@ -1173,8 +1192,185 @@ def admin_dashboard():
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
 
+        # Check whether email already exists
+        cursor.execute("""
+            SELECT vendor_id
+            FROM vendors
+            WHERE email = %s
+        """, (vendor_email,))
+
+        existing_vendor = cursor.fetchone()
+
+        if existing_vendor:
+            return jsonify({
+                "error": "Vendor with this email already exists"
+            }), 409
+
+        # Hash password
+        hashed_password = bcrypt.hashpw(
+            vendor_password.encode("utf-8"),
+            bcrypt.gensalt()
+        ).decode("utf-8")
+
+        # Insert vendor
+        cursor.execute("""
+            INSERT INTO vendors
+            (
+                vendor_name,
+                shop_name,
+                email,
+                phone,
+                password,
+                address,
+                status
+            )
+            VALUES
+            (
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                'Pending'
+            )
+        """, (
+            vendor_name,
+            shop_name,
+            vendor_email,
+            vendor_phone,
+            hashed_password,
+            vendor_address
+        ))
+
+        conn.commit()
+
+        return jsonify({
+            "message": "Vendor registration successful. Waiting for admin approval."
+        }), 201
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+
+# ==========================================
+# VENDOR LOGIN
+# ==========================================
+
+@app.route("/vendor-login", methods=["POST"])
+def vendor_login():
+
+    data = request.get_json()
+
+    vendor_email = data.get("vendor_email")
+    vendor_password = data.get("vendor_password")
+
+    if not vendor_email or not vendor_password:
+        return jsonify({
+            "error": "Email and password are required"
+        }), 400
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT *
+            FROM vendors
+            WHERE email = %s
+        """, (vendor_email,))
+
+        vendor = cursor.fetchone()
+
+        if not vendor:
+            return jsonify({
+                "error": "Vendor not found"
+            }), 404
+
+        # Check password
+        password_match = bcrypt.checkpw(
+            vendor_password.encode("utf-8"),
+            vendor["password"].encode("utf-8")
+        )
+
+        if not password_match:
+            return jsonify({
+                "error": "Invalid password"
+            }), 401
+
+        # Check vendor status
+        if vendor["status"] == "Pending":
+
+            return jsonify({
+                "error": "Your vendor account is waiting for admin approval."
+            }), 403
+
+        if vendor["status"] == "Rejected":
+
+            return jsonify({
+                "error": "Your vendor registration has been rejected."
+            }), 403
+
+        if vendor["status"] != "Approved":
+
+            return jsonify({
+                "error": "Your vendor account is not active."
+            }), 403
+
+        # Successful login
+        return jsonify({
+            "message": "Vendor Login Successful",
+            "vendor_id": vendor["vendor_id"],
+            "vendor_name": vendor["vendor_name"],
+            "shop_name": vendor["shop_name"],
+            "vendor_email": vendor["email"]
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+@app.route("/admin/dashboard", methods=["GET"])
+def admin_dashboard():
+
+    conn = None
+    cursor = None
+
+    try:
+  
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
         # Total Products
-        cursor.execute("SELECT COUNT(*) AS total_products FROM products")
+        cursor.execute("SELECT COUNT(*) AS total_products FROM products where product_status='Available' ")
         products = cursor.fetchone()["total_products"]
 
         # Total Categories
@@ -1209,6 +1405,452 @@ def admin_dashboard():
 
         if conn:
             conn.close()
+
+# ==========================================
+# VENDOR DASHBOARD
+# ==========================================
+
+@app.route("/vendor/dashboard/<int:vendor_id>", methods=["GET"])
+def vendor_dashboard(vendor_id):
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Check vendor
+        cursor.execute("""
+            SELECT
+                vendor_id,
+                vendor_name,
+                shop_name,
+                email,
+                status
+            FROM vendors
+            WHERE vendor_id = %s
+        """, (vendor_id,))
+
+        vendor = cursor.fetchone()
+
+        if not vendor:
+            return jsonify({
+                "error": "Vendor not found"
+            }), 404
+
+        if vendor["status"] != "Approved":
+            return jsonify({
+                "error": "Vendor account is not approved"
+            }), 403
+
+        # Count products
+        cursor.execute("""
+            SELECT COUNT(*) AS product_count
+            FROM products
+            WHERE vendor_id = %s
+        """, (vendor_id,))
+
+        product_result = cursor.fetchone()
+
+        # Count orders containing vendor products
+        cursor.execute("""
+            SELECT COUNT(DISTINCT oi.order_id) AS order_count
+            FROM order_items oi
+            INNER JOIN products p
+                ON oi.product_id = p.product_id
+            WHERE p.vendor_id = %s
+        """, (vendor_id,))
+
+        order_result = cursor.fetchone()
+
+            # Calculate sales
+            # Calculate sales
+        cursor.execute("""
+            SELECT
+                COALESCE(
+                    SUM(oi.price * oi.quantity),
+                    0
+                ) AS total_sales
+            FROM order_items oi
+            INNER JOIN products p
+                ON oi.product_id = p.product_id
+            INNER JOIN orders o
+                ON oi.order_id = o.order_id
+            WHERE p.vendor_id = %s
+            AND o.order_status IN ('Confirmed', 'Delivered')
+        """, (vendor_id,))
+
+        sales_result = cursor.fetchone()
+
+        # Recent orders
+        cursor.execute("""
+            SELECT
+                o.order_id,
+                o.order_date,
+                o.order_status,
+                c.customer_name,
+                SUM(
+                    oi.price * oi.quantity
+                ) AS vendor_amount
+            FROM orders o
+
+            INNER JOIN customers c
+                ON o.customer_id = c.customer_id
+
+            INNER JOIN order_items oi
+                ON o.order_id = oi.order_id
+
+            INNER JOIN products p
+                ON oi.product_id = p.product_id
+
+            WHERE p.vendor_id = %s
+
+            GROUP BY
+                o.order_id,
+                o.order_date,
+                o.order_status,
+                c.customer_name
+
+            ORDER BY o.order_date DESC
+
+            LIMIT 5
+        """, (vendor_id,))
+
+        recent_orders = cursor.fetchall()
+
+        return jsonify({
+
+            "vendor": vendor,
+
+            "statistics": {
+                "products": product_result["product_count"],
+                "orders": order_result["order_count"],
+                "sales": float(
+                    sales_result["total_sales"]
+                )
+            },
+
+            "recent_orders": recent_orders
+
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+# ==========================================
+# VENDOR SALES
+# ==========================================
+# ==========================================
+# VENDOR SALES
+# ==========================================
+
+@app.route("/vendor/sales/<int:vendor_id>", methods=["GET"])
+def vendor_sales(vendor_id):
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Check vendor
+        cursor.execute("""
+            SELECT vendor_id, status
+            FROM vendors
+            WHERE vendor_id = %s
+        """, (vendor_id,))
+
+        vendor = cursor.fetchone()
+
+        if not vendor:
+            return jsonify({
+                "error": "Vendor not found"
+            }), 404
+
+        if vendor["status"] != "Approved":
+            return jsonify({
+                "error": "Vendor is not approved"
+            }), 403
+
+
+        # ==========================================
+        # SALES SUMMARY
+        # ==========================================
+
+        cursor.execute("""
+            SELECT
+
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN o.order_status IN ('Confirmed', 'Delivered')
+                            THEN oi.price * oi.quantity
+                            ELSE 0
+                        END
+                    ),
+                    0
+                ) AS total_sales,
+
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN o.order_status = 'Confirmed'
+                            THEN oi.price * oi.quantity
+                            ELSE 0
+                        END
+                    ),
+                    0
+                ) AS confirmed_sales,
+
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN o.order_status = 'Delivered'
+                            THEN oi.price * oi.quantity
+                            ELSE 0
+                        END
+                    ),
+                    0
+                ) AS delivered_sales,
+
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN o.order_status = 'Cancelled'
+                            THEN oi.price * oi.quantity
+                            ELSE 0
+                        END
+                    ),
+                    0
+                ) AS cancelled_sales
+
+            FROM order_items oi
+
+            INNER JOIN products p
+                ON oi.product_id = p.product_id
+
+            INNER JOIN orders o
+                ON oi.order_id = o.order_id
+
+            WHERE p.vendor_id = %s
+
+        """, (vendor_id,))
+
+        summary = cursor.fetchone()
+
+
+        # ==========================================
+        # SALES TRANSACTIONS
+        # ==========================================
+
+        cursor.execute("""
+            SELECT
+
+                o.order_id,
+                o.order_date,
+                o.order_status,
+
+                c.customer_name,
+
+                p.product_id,
+                p.product_name,
+
+                oi.quantity,
+                oi.price,
+
+                (oi.quantity * oi.price) AS amount
+
+            FROM order_items oi
+
+            INNER JOIN products p
+                ON oi.product_id = p.product_id
+
+            INNER JOIN orders o
+                ON oi.order_id = o.order_id
+
+            INNER JOIN customers c
+                ON o.customer_id = c.customer_id
+
+            WHERE p.vendor_id = %s
+
+            ORDER BY o.order_date DESC
+
+        """, (vendor_id,))
+
+        transactions = cursor.fetchall()
+
+
+        return jsonify({
+            "summary": summary,
+            "transactions": transactions
+        })
+
+
+    except Exception as e:
+
+        print("Vendor sales error:", e)
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+# ==========================================
+# VENDOR PROFILE - GET
+# ==========================================
+
+@app.route("/vendor/profile/<int:vendor_id>", methods=["GET"])
+def get_vendor_profile(vendor_id):
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT
+                vendor_id,
+                vendor_name,
+                shop_name,
+                email,
+                phone,
+                address,
+                status,
+                created_at
+            FROM vendors
+            WHERE vendor_id = %s
+        """, (vendor_id,))
+
+        vendor = cursor.fetchone()
+
+        if not vendor:
+            return jsonify({
+                "error": "Vendor not found"
+            }), 404
+
+        return jsonify(vendor), 200
+
+    except Exception as e:
+
+        print("Vendor profile error:", e)
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+# ==========================================
+# VENDOR PROFILE - UPDATE
+# ==========================================
+
+@app.route("/vendor/profile/<int:vendor_id>", methods=["PUT"])
+def update_vendor_profile(vendor_id):
+
+    conn = None
+    cursor = None
+
+    try:
+
+        data = request.get_json()
+
+        shop_name = data.get("shop_name")
+        phone = data.get("phone")
+        address = data.get("address")
+
+        if not shop_name:
+            return jsonify({
+                "error": "Shop name is required"
+            }), 400
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Check vendor
+        cursor.execute("""
+            SELECT vendor_id
+            FROM vendors
+            WHERE vendor_id = %s
+        """, (vendor_id,))
+
+        vendor = cursor.fetchone()
+
+        if not vendor:
+            return jsonify({
+                "error": "Vendor not found"
+            }), 404
+
+        # Update profile
+        cursor.execute("""
+            UPDATE vendors
+            SET
+                shop_name = %s,
+                phone = %s,
+                address = %s
+            WHERE vendor_id = %s
+        """, (
+            shop_name,
+            phone,
+            address,
+            vendor_id
+        ))
+
+        conn.commit()
+
+        return jsonify({
+            "message": "Profile updated successfully"
+        }), 200
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        print("Vendor profile update error:", e)
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
 
 @app.route("/admin/products", methods=["POST"])
 def create_product():
@@ -1293,6 +1935,198 @@ def create_product():
 
         if conn:
             conn.rollback()
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+# ==========================================
+# VENDOR PRODUCTS
+# ==========================================
+
+@app.route("/vendor/products", methods=["POST"])
+def vendor_create_product():
+
+    conn = None
+    cursor = None
+
+    try:
+
+        # Get form data
+        data = request.form
+
+        vendor_id = data.get("vendor_id")
+        product_name = data.get("product_name")
+        description = data.get("description")
+        category_id = data.get("category_id")
+        price = data.get("price")
+        stock = data.get("stock")
+
+        # Validate
+        if not vendor_id:
+            return jsonify({
+                "error": "Vendor ID is required"
+            }), 400
+
+        if not product_name:
+            return jsonify({
+                "error": "Product name is required"
+            }), 400
+
+        if not category_id:
+            return jsonify({
+                "error": "Category is required"
+            }), 400
+
+        if not price:
+            return jsonify({
+                "error": "Price is required"
+            }), 400
+
+        if not stock:
+            return jsonify({
+                "error": "Stock is required"
+            }), 400
+
+        # Image
+        image_file = request.files.get("image")
+        image_name = None
+
+        if image_file and image_file.filename:
+
+            filename = secure_filename(image_file.filename)
+
+            if not filename:
+                return jsonify({
+                    "error": "Invalid image filename"
+                }), 400
+
+            image_path = os.path.join(
+                app.config["UPLOAD_FOLDER"],
+                filename
+            )
+
+            image_file.save(image_path)
+
+            image_name = filename
+
+        if not image_name:
+            image_name = "no-image.jpg"
+
+        # Database
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        query = """
+            INSERT INTO products
+            (
+                vendor_id,
+                category_id,
+                product_name,
+                description,
+                price,
+                stock,
+                product_status,
+                image
+            )
+            VALUES
+            (%s, %s, %s, %s, %s, %s, %s, %s)
+        """
+
+        product_status = (
+            "Available"
+            if int(stock) > 0
+            else "Out of Stock"
+        )
+
+        cursor.execute(
+            query,
+            (
+                vendor_id,
+                category_id,
+                product_name,
+                description,
+                price,
+                stock,
+                product_status,
+                image_name
+            )
+        )
+
+        conn.commit()
+
+        return jsonify({
+            "message": "Product added successfully",
+            "product_id": cursor.lastrowid
+        }), 201
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        print("Vendor product error:", e)
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+@app.route(
+    "/vendor/products/<int:vendor_id>",
+    methods=["GET"]
+)
+def vendor_products(vendor_id):
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT
+                p.product_id,
+                p.product_name,
+                p.description,
+                p.price,
+                p.stock,
+                p.product_status,
+                p.image,
+                p.created_at,
+                c.category_name
+            FROM products p
+
+            INNER JOIN categories c
+                ON p.category_id = c.category_id
+
+            WHERE p.vendor_id = %s
+
+            ORDER BY p.created_at DESC
+        """, (vendor_id,))
+
+        products = cursor.fetchall()
+
+        return jsonify(products)
+
+    except Exception as e:
 
         return jsonify({
             "error": str(e)
@@ -1414,6 +2248,305 @@ def update_product(product_id):
         if conn:
             conn.close()
 
+# ==========================================
+# VENDOR - UPDATE OWN PRODUCT
+# ==========================================
+
+@app.route(
+    "/vendor/products/<int:product_id>",
+    methods=["PUT"]
+)
+def update_vendor_product(product_id):
+
+    conn = None
+    cursor = None
+
+    try:
+
+        # Get vendor ID from form data
+        vendor_id = request.form.get("vendor_id")
+
+        if not vendor_id:
+            return jsonify({
+                "error": "Vendor ID is required"
+            }), 400
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # ==========================================
+        # CHECK PRODUCT BELONGS TO THIS VENDOR
+        # ==========================================
+
+        cursor.execute("""
+            SELECT product_id
+            FROM products
+            WHERE product_id = %s
+            AND vendor_id = %s
+        """, (
+            product_id,
+            vendor_id
+        ))
+
+        product = cursor.fetchone()
+
+        if not product:
+            return jsonify({
+                "error": "You cannot update this product"
+            }), 403
+
+
+        # ==========================================
+        # GET FORM DATA
+        # ==========================================
+
+        product_name = request.form.get("product_name")
+        description = request.form.get("description")
+        category_id = request.form.get("category_id")
+        price = request.form.get("price")
+        stock = request.form.get("stock")
+        product_status = request.form.get("product_status")
+
+
+        # ==========================================
+        # VALIDATION
+        # ==========================================
+
+        if not product_name:
+            return jsonify({
+                "error": "Product name is required"
+            }), 400
+
+        if not category_id:
+            return jsonify({
+                "error": "Category is required"
+            }), 400
+
+        if price is None or price == "":
+            return jsonify({
+                "error": "Price is required"
+            }), 400
+
+        if stock is None or stock == "":
+            return jsonify({
+                "error": "Stock is required"
+            }), 400
+
+
+        # ==========================================
+        # AUTOMATIC PRODUCT STATUS
+        # ==========================================
+
+        if int(stock) > 0:
+
+            if product_status == "Unavailable":
+                final_status = "Unavailable"
+            else:
+                final_status = "Available"
+
+        else:
+
+            final_status = "Out of Stock"
+
+
+        # ==========================================
+        # IMAGE
+        # ==========================================
+
+        image_file = request.files.get("image")
+
+        if image_file and image_file.filename:
+
+            filename = secure_filename(
+                image_file.filename
+            )
+
+            if not filename:
+                return jsonify({
+                    "error": "Invalid image filename"
+                }), 400
+
+            image_path = os.path.join(
+                app.config["UPLOAD_FOLDER"],
+                filename
+            )
+
+            image_file.save(image_path)
+
+
+            # Update including image
+
+            cursor.execute("""
+                UPDATE products
+                SET
+                    product_name = %s,
+                    description = %s,
+                    category_id = %s,
+                    price = %s,
+                    stock = %s,
+                    product_status = %s,
+                    image = %s
+                WHERE product_id = %s
+                AND vendor_id = %s
+            """, (
+                product_name,
+                description,
+                int(category_id),
+                float(price),
+                int(stock),
+                final_status,
+                filename,
+                product_id,
+                vendor_id
+            ))
+
+        else:
+
+            # Update without changing image
+
+            cursor.execute("""
+                UPDATE products
+                SET
+                    product_name = %s,
+                    description = %s,
+                    category_id = %s,
+                    price = %s,
+                    stock = %s,
+                    product_status = %s
+                WHERE product_id = %s
+                AND vendor_id = %s
+            """, (
+                product_name,
+                description,
+                int(category_id),
+                float(price),
+                int(stock),
+                final_status,
+                product_id,
+                vendor_id
+            ))
+
+
+        conn.commit()
+
+
+        return jsonify({
+            "message": "Product updated successfully"
+        }), 200
+
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        print(
+            "Vendor product update error:",
+            e
+        )
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+# ==========================================
+# VENDOR - GET OWN ORDERS
+# ==========================================
+@app.route("/vendor/orders/<int:vendor_id>", methods=["GET"])
+def get_vendor_orders(vendor_id):
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Check vendor
+        cursor.execute("""
+            SELECT vendor_id, status
+            FROM vendors
+            WHERE vendor_id = %s
+        """, (vendor_id,))
+
+        vendor = cursor.fetchone()
+
+        if not vendor:
+            return jsonify({
+                "error": "Vendor not found"
+            }), 404
+
+        if vendor["status"] != "Approved":
+            return jsonify({
+                "error": "Vendor is not approved"
+            }), 403
+
+        # Get orders containing this vendor's products
+        cursor.execute("""
+            SELECT
+                o.order_id,
+                o.order_date,
+                o.order_status,
+
+                c.customer_name,
+                c.email,
+
+                oi.order_item_id,
+                oi.product_id,
+                oi.quantity,
+                oi.price,
+
+                p.product_name,
+                p.image,
+
+                (oi.quantity * oi.price) AS item_total
+
+            FROM orders o
+
+            INNER JOIN customers c
+                ON o.customer_id = c.customer_id
+
+            INNER JOIN order_items oi
+                ON o.order_id = oi.order_id
+
+            INNER JOIN products p
+                ON oi.product_id = p.product_id
+
+            WHERE p.vendor_id = %s
+
+            ORDER BY o.order_date DESC
+        """, (vendor_id,))
+
+        orders = cursor.fetchall()
+
+        return jsonify(orders)
+
+    except Exception as e:
+
+        print("Vendor orders error:", e)
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
 @app.route("/admin/products/<int:product_id>", methods=["GET"])
 def get_admin_product(product_id):
 
@@ -1456,6 +2589,165 @@ def get_admin_product(product_id):
         return jsonify({
             "error": str(e)
         }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+
+# ==========================================
+# ADMIN - VENDOR DETAILS
+# ==========================================
+
+@app.route("/admin/vendors/<int:vendor_id>", methods=["GET"])
+def admin_vendor_details(vendor_id):
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # ==========================================
+        # VENDOR INFORMATION
+        # ==========================================
+
+        cursor.execute("""
+            SELECT
+                vendor_id,
+                vendor_name,
+                shop_name,
+                email,
+                phone,
+                address,
+                status,
+                created_at
+            FROM vendors
+            WHERE vendor_id = %s
+        """, (vendor_id,))
+
+        vendor = cursor.fetchone()
+
+        if not vendor:
+            return jsonify({
+                "error": "Vendor not found"
+            }), 404
+
+
+        # ==========================================
+        # VENDOR PRODUCTS
+        # ==========================================
+
+        cursor.execute("""
+            SELECT
+                p.product_id,
+                p.product_name,
+                p.description,
+                p.price,
+                p.stock,
+                p.product_status,
+                p.image,
+                p.category_id,
+                c.category_name,
+                p.created_at
+            FROM products p
+
+            LEFT JOIN categories c
+                ON p.category_id = c.category_id
+
+            WHERE p.vendor_id = %s
+
+            ORDER BY p.created_at DESC
+        """, (vendor_id,))
+
+        products = cursor.fetchall()
+
+
+        # ==========================================
+        # TOTAL ORDERS
+        # ==========================================
+
+        cursor.execute("""
+            SELECT
+                COUNT(DISTINCT oi.order_id) AS total_orders
+            FROM order_items oi
+
+            INNER JOIN products p
+                ON oi.product_id = p.product_id
+
+            WHERE p.vendor_id = %s
+        """, (vendor_id,))
+
+        order_result = cursor.fetchone()
+
+
+        # ==========================================
+        # TOTAL SALES
+        # ==========================================
+
+        cursor.execute("""
+            SELECT
+                COALESCE(
+                    SUM(oi.price * oi.quantity),
+                    0
+                ) AS total_sales
+
+            FROM order_items oi
+
+            INNER JOIN products p
+                ON oi.product_id = p.product_id
+
+            INNER JOIN orders o
+                ON oi.order_id = o.order_id
+
+            WHERE p.vendor_id = %s
+            AND o.order_status IN (
+                'Confirmed',
+                'Delivered'
+            )
+        """, (vendor_id,))
+
+        sales_result = cursor.fetchone()
+
+
+        # ==========================================
+        # RESPONSE
+        # ==========================================
+
+        return jsonify({
+
+            "vendor": vendor,
+
+            "statistics": {
+                "total_products": len(products),
+                "total_orders": order_result["total_orders"],
+                "total_sales": float(
+                    sales_result["total_sales"] or 0
+                )
+            },
+
+            "products": products
+
+        }), 200
+
+
+    except Exception as e:
+
+        print(
+            "Admin vendor details error:",
+            e
+        )
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
 
     finally:
 
@@ -1648,6 +2940,162 @@ def update_order_status(order_id):
 
         return jsonify({
             "message": "Order status updated successfully"
+        })
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+# ==========================================
+# VENDOR - GET OWN PRODUCTS
+# ==========================================
+
+@app.route("/vendor/products/<int:vendor_id>", methods=["GET"])
+def get_vendor_products(vendor_id):
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Check vendor exists and is approved
+        cursor.execute("""
+            SELECT vendor_id, status
+            FROM vendors
+            WHERE vendor_id = %s
+        """, (vendor_id,))
+
+        vendor = cursor.fetchone()
+
+        if not vendor:
+            return jsonify({
+                "error": "Vendor not found"
+            }), 404
+
+        if vendor["status"] != "Approved":
+            return jsonify({
+                "error": "Vendor is not approved"
+            }), 403
+
+        # Get only this vendor's products
+        cursor.execute("""
+            SELECT
+                p.product_id,
+                p.vendor_id,
+                p.category_id,
+                p.product_name,
+                p.description,
+                p.price,
+                p.stock,
+                p.product_status,
+                p.image,
+                p.created_at,
+                p.updated_at,
+                c.category_name
+            FROM products p
+
+            INNER JOIN categories c
+                ON p.category_id = c.category_id
+
+            WHERE p.vendor_id = %s
+
+            ORDER BY p.created_at DESC
+        """, (vendor_id,))
+
+        products = cursor.fetchall()
+
+        return jsonify(products)
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+# ==========================================
+# VENDOR - DELETE OWN PRODUCT
+# ==========================================
+
+@app.route(
+    "/vendor/products/<int:product_id>",
+    methods=["DELETE"]
+)
+def delete_vendor_product(product_id):
+
+    conn = None
+    cursor = None
+
+    try:
+
+        data = request.get_json(silent=True) or {}
+
+        vendor_id = data.get("vendor_id")
+
+        if not vendor_id:
+
+            return jsonify({
+                "error": "Vendor ID is required"
+            }), 400
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Check product belongs to vendor
+        cursor.execute("""
+            SELECT product_id
+            FROM products
+            WHERE product_id = %s
+            AND vendor_id = %s
+        """, (
+            product_id,
+            vendor_id
+        ))
+
+        product = cursor.fetchone()
+
+        if not product:
+
+            return jsonify({
+                "error": "You cannot delete this product"
+            }), 403
+
+        cursor.execute("""
+            DELETE FROM products
+            WHERE product_id = %s
+            AND vendor_id = %s
+        """, (
+            product_id,
+            vendor_id
+        ))
+
+        conn.commit()
+
+        return jsonify({
+            "message": "Product deleted successfully"
         })
 
     except Exception as e:
@@ -1957,6 +3405,137 @@ def delete_admin_category(category_id):
 
         return jsonify({
             "message": "Category deleted successfully"
+        })
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+# ==========================================
+# ADMIN - GET ALL VENDORS
+# ==========================================
+
+@app.route("/admin/vendors", methods=["GET"])
+def admin_get_vendors():
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT
+                vendor_id,
+                vendor_name,
+                shop_name,
+                email,
+                phone,
+                address,
+                status,
+                created_at
+            FROM vendors
+            ORDER BY created_at DESC
+        """)
+
+        vendors = cursor.fetchall()
+
+        return jsonify(vendors)
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+
+# ==========================================
+# ADMIN - UPDATE VENDOR STATUS
+# ==========================================
+
+@app.route(
+    "/admin/vendors/<int:vendor_id>/status",
+    methods=["PUT"]
+)
+def admin_update_vendor_status(vendor_id):
+
+    data = request.get_json()
+
+    new_status = data.get("status")
+
+    allowed_statuses = [
+        "Pending",
+        "Approved",
+        "Rejected"
+    ]
+
+    if new_status not in allowed_statuses:
+
+        return jsonify({
+            "error": "Invalid vendor status"
+        }), 400
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Check vendor exists
+        cursor.execute("""
+            SELECT vendor_id
+            FROM vendors
+            WHERE vendor_id = %s
+        """, (vendor_id,))
+
+        vendor = cursor.fetchone()
+
+        if not vendor:
+
+            return jsonify({
+                "error": "Vendor not found"
+            }), 404
+
+        # Update status
+        cursor.execute("""
+            UPDATE vendors
+            SET status = %s
+            WHERE vendor_id = %s
+        """, (
+            new_status,
+            vendor_id
+        ))
+
+        conn.commit()
+
+        return jsonify({
+            "message": f"Vendor status changed to {new_status}",
+            "status": new_status
         })
 
     except Exception as e:
