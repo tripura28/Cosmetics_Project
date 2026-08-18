@@ -10,47 +10,101 @@ function VendorDashboard() {
   const shopName =
     localStorage.getItem("shopName") || "My Shop";
 
-const vendorId = localStorage.getItem("vendorId");
+  const vendorId =
+    localStorage.getItem("vendorId");
 
-const [dashboard, setDashboard] = useState(null);
-const [loading, setLoading] = useState(true);
+  const [dashboard, setDashboard] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-useEffect(() => {
 
-  if (!vendorId) {
-    return;
+  // =====================================================
+  // FETCH VENDOR DASHBOARD
+  // =====================================================
+
+  useEffect(() => {
+
+    if (!vendorId) {
+      setLoading(false);
+      return;
+    }
+
+    fetch(
+      `http://127.0.0.1:5000/vendor/dashboard/${vendorId}`
+    )
+      .then((response) => response.json())
+
+      .then((data) => {
+
+        if (data.error) {
+
+          alert(data.error);
+
+          return;
+        }
+
+        setDashboard(data);
+
+      })
+
+      .catch((error) => {
+
+        console.error(error);
+
+        alert(
+          "Unable to load vendor dashboard."
+        );
+
+      })
+
+      .finally(() => {
+
+        setLoading(false);
+
+      });
+
+  }, [vendorId]);
+
+
+  // =====================================================
+  // LOADING
+  // =====================================================
+
+  if (loading) {
+
+    return (
+
+      <div
+        className="d-flex"
+        style={{
+          minHeight: "100vh",
+          background: "#F7F6FB"
+        }}
+      >
+
+        <VendorSidebar />
+
+        <div
+          className="flex-grow-1 d-flex align-items-center justify-content-center"
+        >
+
+          <div className="text-center">
+
+            <div className="spinner-border text-dark"></div>
+
+            <p className="text-secondary mt-3">
+              Loading dashboard...
+            </p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    );
+
   }
 
-  fetch(
-    `http://127.0.0.1:5000/vendor/dashboard/${vendorId}`
-  )
-    .then((response) => response.json())
-
-    .then((data) => {
-
-      if (data.error) {
-        alert(data.error);
-        return;
-      }
-
-      setDashboard(data);
-
-    })
-
-    .catch((error) => {
-
-      console.error(error);
-      alert("Unable to load vendor dashboard.");
-
-    })
-
-    .finally(() => {
-
-      setLoading(false);
-
-    });
-
-}, [vendorId]);
 
   return (
 
@@ -62,17 +116,25 @@ useEffect(() => {
       }}
     >
 
-      {/* Sidebar */}
+      {/* =================================================
+          SIDEBAR
+      ================================================= */}
 
       <VendorSidebar />
 
-      {/* Main Content */}
+
+      {/* =================================================
+          MAIN CONTENT
+      ================================================= */}
 
       <div
         className="flex-grow-1 p-4 p-md-5"
       >
 
-        {/* Header */}
+
+        {/* =================================================
+            HEADER
+        ================================================= */}
 
         <div
           className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4"
@@ -91,24 +153,30 @@ useEffect(() => {
             </p>
 
             <h2 className="fw-bold mb-1">
+
               Good morning, {vendorName}! 👋
+
             </h2>
 
             <p className="text-secondary mb-0">
+
               Here's what's happening with {shopName}.
+
             </p>
 
           </div>
 
-         
-
         </div>
 
-        {/* Statistics */}
+
+        {/* =================================================
+            STATISTICS
+        ================================================= */}
 
         <div className="row g-4 mb-4">
 
-          {/* Products */}
+
+          {/* PRODUCTS */}
 
           <div className="col-md-4">
 
@@ -127,10 +195,13 @@ useEffect(() => {
                     </p>
 
                     <h2 className="fw-bold mb-0">
-                    {dashboard?.statistics?.products ?? 0}
+
+                      {dashboard?.statistics?.products ?? 0}
+
                     </h2>
 
                   </div>
+
 
                   <div
                     className="rounded-3 d-flex align-items-center justify-content-center"
@@ -147,7 +218,9 @@ useEffect(() => {
                 </div>
 
                 <p className="text-secondary small mt-3 mb-0">
+
                   Products listed in your shop
+
                 </p>
 
               </div>
@@ -156,7 +229,8 @@ useEffect(() => {
 
           </div>
 
-          {/* Orders */}
+
+          {/* ORDERS */}
 
           <div className="col-md-4">
 
@@ -174,11 +248,14 @@ useEffect(() => {
                       Orders
                     </p>
 
-                   <h2 className="fw-bold mb-0">
-                    {dashboard?.statistics?.orders ?? 0}
+                    <h2 className="fw-bold mb-0">
+
+                      {dashboard?.statistics?.orders ?? 0}
+
                     </h2>
 
                   </div>
+
 
                   <div
                     className="rounded-3 d-flex align-items-center justify-content-center"
@@ -195,7 +272,9 @@ useEffect(() => {
                 </div>
 
                 <p className="text-secondary small mt-3 mb-0">
+
                   Orders containing your products
+
                 </p>
 
               </div>
@@ -204,7 +283,8 @@ useEffect(() => {
 
           </div>
 
-          {/* Sales */}
+
+          {/* SALES */}
 
           <div className="col-md-4">
 
@@ -223,13 +303,16 @@ useEffect(() => {
                     </p>
 
                     <h2 className="fw-bold mb-0">
-                    ₹
-                    {Number(
+
+                      ₹
+                      {Number(
                         dashboard?.statistics?.sales ?? 0
-                    ).toFixed(2)}
+                      ).toFixed(2)}
+
                     </h2>
 
                   </div>
+
 
                   <div
                     className="rounded-3 d-flex align-items-center justify-content-center"
@@ -246,7 +329,9 @@ useEffect(() => {
                 </div>
 
                 <p className="text-secondary small mt-3 mb-0">
+
                   Revenue from your products
+
                 </p>
 
               </div>
@@ -257,11 +342,17 @@ useEffect(() => {
 
         </div>
 
-        {/* Main Sections */}
+
+        {/* =================================================
+            MAIN SECTIONS
+        ================================================= */}
 
         <div className="row g-4">
 
-          {/* Recent Orders */}
+
+          {/* =================================================
+              RECENT ORDERS
+          ================================================= */}
 
           <div className="col-lg-8">
 
@@ -271,95 +362,25 @@ useEffect(() => {
 
               <div className="card-body p-4">
 
-                <div className="d-flex justify-content-between align-items-center mb-4">
-{dashboard?.recent_orders?.length > 0 ? (
 
-  <div className="table-responsive">
+                {/* HEADER */}
 
-    <table className="table align-middle">
+                <div
+                  className="d-flex justify-content-between align-items-center mb-4"
+                >
 
-      <thead>
+                  <div>
 
-        <tr>
+                    <h5 className="fw-bold mb-1">
+                      Recent Orders
+                    </h5>
 
-          <th>Order</th>
-          <th>Customer</th>
-          <th>Date</th>
-          <th>Amount</th>
-          <th>Status</th>
+                    <p className="text-secondary small mb-0">
+                      Orders containing your products
+                    </p>
 
-        </tr>
+                  </div>
 
-      </thead>
-
-      <tbody>
-
-        {dashboard.recent_orders.map((order) => (
-
-          <tr key={order.order_id}>
-
-            <td>
-              <strong>
-                #{order.order_id}
-              </strong>
-            </td>
-
-            <td>
-              {order.customer_name}
-            </td>
-
-            <td>
-              {new Date(
-                order.order_date
-              ).toLocaleDateString()}
-            </td>
-
-            <td>
-              ₹
-              {Number(
-                order.vendor_amount
-              ).toFixed(2)}
-            </td>
-
-            <td>
-
-              <span className="badge bg-light text-dark">
-
-                {order.order_status}
-
-              </span>
-
-            </td>
-
-          </tr>
-
-        ))}
-
-      </tbody>
-
-    </table>
-
-  </div>
-
-) : (
-
-  <div className="text-center py-5">
-
-    <div style={{ fontSize: "40px" }}>
-      🛒
-    </div>
-
-    <h6 className="fw-semibold mt-3">
-      No orders yet
-    </h6>
-
-    <p className="text-secondary mb-0">
-      Your recent orders will appear here.
-    </p>
-
-  </div>
-
-)}
 
                   <Link
                     to={`/vendor/orders/${vendorId}`}
@@ -373,25 +394,134 @@ useEffect(() => {
 
                 </div>
 
-                <div className="text-center py-5">
 
-                  <div
-                    style={{
-                      fontSize: "40px"
-                    }}
-                  >
-                    🛒
+                {/* =================================================
+                    SHOW ORDERS OR NO ORDERS
+                ================================================= */}
+
+                {dashboard?.recent_orders?.length > 0 ? (
+
+                  <div className="table-responsive">
+
+                    <table className="table align-middle">
+
+                      <thead>
+
+                        <tr>
+
+                          <th>
+                            Order
+                          </th>
+
+                          <th>
+                            Customer
+                          </th>
+
+                          <th>
+                            Date
+                          </th>
+
+                          <th>
+                            Amount
+                          </th>
+
+                          <th>
+                            Status
+                          </th>
+
+                        </tr>
+
+                      </thead>
+
+
+                      <tbody>
+
+                        {dashboard.recent_orders.map(
+                          (order) => (
+
+                            <tr key={order.order_id}>
+
+                              <td>
+
+                                <strong>
+                                  #{order.order_id}
+                                </strong>
+
+                              </td>
+
+
+                              <td>
+
+                                {order.customer_name}
+
+                              </td>
+
+
+                              <td>
+
+                                {new Date(
+                                  order.order_date
+                                ).toLocaleDateString()}
+
+                              </td>
+
+
+                              <td>
+
+                                ₹
+                                {Number(
+                                  order.vendor_amount
+                                ).toFixed(2)}
+
+                              </td>
+
+
+                              <td>
+
+                                <span
+                                  className="badge bg-light text-dark"
+                                >
+
+                                  {order.order_status}
+
+                                </span>
+
+                              </td>
+
+                            </tr>
+
+                          )
+                        )}
+
+                      </tbody>
+
+                    </table>
+
                   </div>
 
-                  <h6 className="fw-semibold mt-3">
-                    No orders yet
-                  </h6>
+                ) : (
 
-                  <p className="text-secondary mb-0">
-                    Your recent orders will appear here.
-                  </p>
+                  <div className="text-center py-5">
 
-                </div>
+                    <div
+                      style={{
+                        fontSize: "40px"
+                      }}
+                    >
+                      🛒
+                    </div>
+
+                    <h6 className="fw-semibold mt-3">
+                      No orders yet
+                    </h6>
+
+                    <p className="text-secondary mb-0">
+                      Your recent orders will appear here.
+                    </p>
+
+                  </div>
+
+                )}
 
               </div>
 
@@ -399,7 +529,10 @@ useEffect(() => {
 
           </div>
 
-          {/* Quick Actions */}
+
+          {/* =================================================
+              QUICK ACTIONS
+          ================================================= */}
 
           <div className="col-lg-4">
 
@@ -417,8 +550,11 @@ useEffect(() => {
                   Manage your shop quickly
                 </p>
 
+
+                {/* MANAGE PRODUCTS */}
+
                 <Link
-                  to={`/vendor/products/${vendorId}`}
+                  to="/vendor/products"
                   className="d-flex align-items-center gap-3 p-3 rounded-3 text-decoration-none mb-3"
                   style={{
                     background: "#F5F3FF",
@@ -448,8 +584,11 @@ useEffect(() => {
 
                 </Link>
 
+
+                {/* VIEW ORDERS */}
+
                 <Link
-                 to={`/vendor/orders/${vendorId}`}
+                  to={`/vendor/orders/${vendorId}`}
                   className="d-flex align-items-center gap-3 p-3 rounded-3 text-decoration-none mb-3"
                   style={{
                     background: "#FFF7ED",
@@ -479,8 +618,11 @@ useEffect(() => {
 
                 </Link>
 
+
+                {/* VIEW SALES */}
+
                 <Link
-                 to={`/vendor/sales/${vendorId}`}
+                  to={`/vendor/sales/${vendorId}`}
                   className="d-flex align-items-center gap-3 p-3 rounded-3 text-decoration-none"
                   style={{
                     background: "#ECFDF3",
@@ -523,7 +665,6 @@ useEffect(() => {
     </div>
 
   );
-
 }
 
 export default VendorDashboard;

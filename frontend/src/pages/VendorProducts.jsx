@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import VendorSidebar from "../components/VendorSidebar";
+import { useNavigate } from "react-router-dom";
 
 function VendorProducts() {
 
-  const vendorId = localStorage.getItem("vendorId");
+  const navigate = useNavigate();
 
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -11,8 +12,13 @@ function VendorProducts() {
   const [selectedCategory, setSelectedCategory] = useState("");
 
   const [loading, setLoading] = useState(true);
+
   const [showForm, setShowForm] = useState(false);
+
   const [editingProduct, setEditingProduct] = useState(null);
+
+  const [image, setImage] = useState(null);
+
 
   const [formData, setFormData] = useState({
     product_name: "",
@@ -23,22 +29,45 @@ function VendorProducts() {
     product_status: "Available"
   });
 
-  const [image, setImage] = useState(null);
+
+  // =====================================================
+  // GET CURRENT VENDOR ID
+  // =====================================================
+
+  const getVendorId = () => {
+
+    return localStorage.getItem("vendorId");
+
+  };
 
 
-  // ==========================================
+  // =====================================================
   // LOAD PRODUCTS
-  // ==========================================
+  // =====================================================
 
   const loadProducts = async () => {
+
+    const currentVendorId = getVendorId();
+
+    if (!currentVendorId) {
+
+      navigate("/vendor-login", {
+        replace: true
+      });
+
+      return;
+
+    }
+
 
     try {
 
       const response = await fetch(
-        `http://127.0.0.1:5000/vendor/products/${vendorId}`
+        `http://127.0.0.1:5000/vendor/products/${currentVendorId}`
       );
 
       const data = await response.json();
+
 
       if (response.ok) {
 
@@ -55,7 +84,10 @@ function VendorProducts() {
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        "Error loading products:",
+        error
+      );
 
       alert(
         "Unable to connect to the server."
@@ -70,9 +102,9 @@ function VendorProducts() {
   };
 
 
-  // ==========================================
+  // =====================================================
   // LOAD CATEGORIES
-  // ==========================================
+  // =====================================================
 
   const loadCategories = async () => {
 
@@ -84,6 +116,7 @@ function VendorProducts() {
 
       const data = await response.json();
 
+
       if (response.ok) {
 
         setCategories(data);
@@ -92,65 +125,78 @@ function VendorProducts() {
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        "Error loading categories:",
+        error
+      );
 
     }
 
   };
 
 
-  // ==========================================
+  // =====================================================
   // LOAD DATA
-  // ==========================================
+  // =====================================================
 
   useEffect(() => {
 
-    if (!vendorId) {
+    const currentVendorId = getVendorId();
 
-      alert(
-        "Vendor session not found."
-      );
+
+    if (!currentVendorId) {
+
+      navigate("/vendor-login", {
+        replace: true
+      });
 
       return;
 
     }
 
+
     loadProducts();
+
     loadCategories();
 
-  }, [vendorId]);
+  }, []);
 
 
-  // ==========================================
-  // FILTER PRODUCTS BY CATEGORY
-  // ==========================================
+  // =====================================================
+  // FILTER PRODUCTS
+  // =====================================================
 
   const filteredProducts = selectedCategory
-  ? products.filter((product) => {
+    ? products.filter((product) => {
 
-      const selectedCategoryName =
-        categories.find(
-          (category) =>
-            String(category.category_id) ===
-            String(selectedCategory)
-        )?.category_name;
-
-      return (
-        product.category_name ===
-        selectedCategoryName
-      );
-
-    })
-  : products;
+        const selectedCategoryName =
+          categories.find(
+            (category) =>
+              String(category.category_id) ===
+              String(selectedCategory)
+          )?.category_name;
 
 
-  // ==========================================
+        return (
+          product.category_name ===
+          selectedCategoryName
+        );
+
+      })
+    : products;
+
+
+  // =====================================================
   // HANDLE INPUT
-  // ==========================================
+  // =====================================================
 
   const handleChange = (e) => {
 
-    const { name, value } = e.target;
+    const {
+      name,
+      value
+    } = e.target;
+
 
     setFormData({
       ...formData,
@@ -160,23 +206,29 @@ function VendorProducts() {
   };
 
 
-  // ==========================================
+  // =====================================================
   // IMAGE
-  // ==========================================
+  // =====================================================
 
   const handleImageChange = (e) => {
 
-    const file = e.target.files[0];
+    const file =
+      e.target.files[0];
+
 
     if (!file) {
+
       return;
+
     }
+
 
     const allowedTypes = [
       "image/jpeg",
       "image/png",
       "image/webp"
     ];
+
 
     if (!allowedTypes.includes(file.type)) {
 
@@ -190,18 +242,20 @@ function VendorProducts() {
 
     }
 
+
     setImage(file);
 
   };
 
 
-  // ==========================================
+  // =====================================================
   // OPEN ADD FORM
-  // ==========================================
+  // =====================================================
 
   const openAddForm = () => {
 
     setEditingProduct(null);
+
 
     setFormData({
       product_name: "",
@@ -212,6 +266,7 @@ function VendorProducts() {
       product_status: "Available"
     });
 
+
     setImage(null);
 
     setShowForm(true);
@@ -219,23 +274,38 @@ function VendorProducts() {
   };
 
 
-  // ==========================================
+  // =====================================================
   // OPEN EDIT FORM
-  // ==========================================
+  // =====================================================
 
   const openEditForm = (product) => {
 
     setEditingProduct(product);
 
+
     setFormData({
-      product_name: product.product_name || "",
-      description: product.description || "",
-      category_id: product.category_id || "",
-      price: product.price || "",
-      stock: product.stock || "",
+
+      product_name:
+        product.product_name || "",
+
+      description:
+        product.description || "",
+
+      category_id:
+        product.category_id || "",
+
+      price:
+        product.price || "",
+
+      stock:
+        product.stock || "",
+
       product_status:
-        product.product_status || "Available"
+        product.product_status ||
+        "Available"
+
     });
+
 
     setImage(null);
 
@@ -244,13 +314,29 @@ function VendorProducts() {
   };
 
 
-  // ==========================================
+  // =====================================================
   // SUBMIT PRODUCT
-  // ==========================================
+  // =====================================================
 
   const handleSubmit = async (e) => {
 
     e.preventDefault();
+
+
+    const currentVendorId =
+      getVendorId();
+
+
+    if (!currentVendorId) {
+
+      navigate("/vendor-login", {
+        replace: true
+      });
+
+      return;
+
+    }
+
 
     if (
       !formData.product_name ||
@@ -267,44 +353,54 @@ function VendorProducts() {
 
     }
 
+
     try {
 
-      const data = new FormData();
+      const data =
+        new FormData();
+
 
       data.append(
         "vendor_id",
-        vendorId
+        currentVendorId
       );
+
 
       data.append(
         "product_name",
         formData.product_name
       );
 
+
       data.append(
         "description",
         formData.description
       );
+
 
       data.append(
         "category_id",
         formData.category_id
       );
 
+
       data.append(
         "price",
         formData.price
       );
+
 
       data.append(
         "stock",
         formData.stock
       );
 
+
       data.append(
         "product_status",
         formData.product_status
       );
+
 
       if (image) {
 
@@ -317,10 +413,13 @@ function VendorProducts() {
 
 
       let url;
+
       let method;
 
 
-      // EDIT PRODUCT
+      // =================================================
+      // EDIT
+      // =================================================
 
       if (editingProduct) {
 
@@ -331,7 +430,10 @@ function VendorProducts() {
 
       }
 
-      // ADD PRODUCT
+
+      // =================================================
+      // ADD
+      // =================================================
 
       else {
 
@@ -343,15 +445,18 @@ function VendorProducts() {
       }
 
 
-      const response = await fetch(
-        url,
-        {
-          method,
-          body: data
-        }
-      );
+      const response =
+        await fetch(
+          url,
+          {
+            method: method,
+            body: data
+          }
+        );
 
-      const result = await response.json();
+
+      const result =
+        await response.json();
 
 
       if (response.ok) {
@@ -361,9 +466,13 @@ function VendorProducts() {
           "Product saved successfully."
         );
 
+
         setShowForm(false);
+
         setEditingProduct(null);
+
         setImage(null);
+
 
         await loadProducts();
 
@@ -382,7 +491,11 @@ function VendorProducts() {
 
     catch (error) {
 
-      console.error(error);
+      console.error(
+        "Error saving product:",
+        error
+      );
+
 
       alert(
         "Unable to connect to the server."
@@ -393,48 +506,80 @@ function VendorProducts() {
   };
 
 
-  // ==========================================
+  // =====================================================
   // DELETE PRODUCT
-  // ==========================================
+  // =====================================================
 
   const deleteProduct = async (productId) => {
 
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this product?"
-    );
+    const currentVendorId =
+      getVendorId();
+
+
+    if (!currentVendorId) {
+
+      navigate("/vendor-login", {
+        replace: true
+      });
+
+      return;
+
+    }
+
+
+    const confirmDelete =
+      window.confirm(
+        "Are you sure you want to delete this product?"
+      );
+
 
     if (!confirmDelete) {
+
       return;
+
     }
+
 
     try {
 
-      const response = await fetch(
-        `http://127.0.0.1:5000/vendor/products/${productId}`,
-        {
-          method: "DELETE",
+      const response =
+        await fetch(
+          `http://127.0.0.1:5000/vendor/products/${productId}`,
+          {
+            method: "DELETE",
 
-          headers: {
-            "Content-Type": "application/json"
-          },
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
 
-          body: JSON.stringify({
-            vendor_id: vendorId
-          })
-        }
-      );
+            body: JSON.stringify({
+              vendor_id:
+                currentVendorId
+            })
 
-      const result = await response.json();
+          }
+        );
+
+
+      const result =
+        await response.json();
+
 
       if (response.ok) {
 
-        alert(result.message);
+        alert(
+          result.message ||
+          "Product deleted successfully."
+        );
+
 
         setProducts(
           (previousProducts) =>
             previousProducts.filter(
               (product) =>
-                product.product_id !== productId
+                product.product_id !==
+                productId
             )
         );
 
@@ -453,7 +598,11 @@ function VendorProducts() {
 
     catch (error) {
 
-      console.error(error);
+      console.error(
+        "Error deleting product:",
+        error
+      );
+
 
       alert(
         "Unable to connect to the server."
@@ -464,29 +613,38 @@ function VendorProducts() {
   };
 
 
-  // ==========================================
+  // =====================================================
   // LOADING
-  // ==========================================
+  // =====================================================
 
   if (loading) {
 
     return (
 
-      <div className="d-flex">
+      <div
+        className="d-flex"
+        style={{
+          minHeight: "100vh",
+          background: "#F7F6FB"
+        }}
+      >
 
         <VendorSidebar />
 
+
         <div
           className="flex-grow-1 d-flex align-items-center justify-content-center"
-          style={{
-            minHeight: "100vh",
-            background: "#F7F6FB"
-          }}
         >
 
-          <h4>
-            Loading Products...
-          </h4>
+          <div className="text-center">
+
+            <div className="spinner-border text-dark"></div>
+
+            <h5 className="mt-3">
+              Loading Products...
+            </h5>
+
+          </div>
 
         </div>
 
@@ -510,12 +668,14 @@ function VendorProducts() {
       <VendorSidebar />
 
 
-      <div className="flex-grow-1 p-4 p-md-5">
+      <div
+        className="flex-grow-1 p-4 p-md-5"
+      >
 
 
-        {/* ===================================== */}
-        {/* HEADER */}
-        {/* ===================================== */}
+        {/* =================================================
+            HEADER
+        ================================================= */}
 
         <div
           className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4"
@@ -533,9 +693,11 @@ function VendorProducts() {
               SELLER CENTER
             </p>
 
+
             <h2 className="fw-bold mb-1">
               My Products
             </h2>
+
 
             <p className="text-secondary mb-0">
               Manage the products in your shop.
@@ -559,9 +721,9 @@ function VendorProducts() {
         </div>
 
 
-        {/* ===================================== */}
-        {/* PRODUCT SUMMARY */}
-        {/* ===================================== */}
+        {/* =================================================
+            SUMMARY
+        ================================================= */}
 
         <div className="row g-4 mb-4">
 
@@ -580,9 +742,11 @@ function VendorProducts() {
                   Total Products
                 </p>
 
+
                 <h2 className="fw-bold mb-0">
                   {products.length}
                 </h2>
+
 
                 <small className="text-secondary">
                   Products in your shop
@@ -611,6 +775,7 @@ function VendorProducts() {
                   Filter by Category
                 </label>
 
+
                 <select
                   className="form-select"
                   value={selectedCategory}
@@ -625,6 +790,7 @@ function VendorProducts() {
                     All Categories
                   </option>
 
+
                   {categories.map(
                     (category) => (
 
@@ -636,13 +802,16 @@ function VendorProducts() {
                           category.category_id
                         }
                       >
-                        {category.category_name}
+                        {
+                          category.category_name
+                        }
                       </option>
 
                     )
                   )}
 
                 </select>
+
 
                 <small className="text-secondary d-block mt-2">
 
@@ -662,12 +831,50 @@ function VendorProducts() {
           </div>
 
 
+          {/* AVAILABLE PRODUCTS */}
+
+          <div className="col-md-4">
+
+            <div
+              className="card border-0 shadow-sm rounded-4 h-100"
+            >
+
+              <div className="card-body p-4">
+
+                <p className="text-secondary mb-2">
+                  Available Products
+                </p>
+
+
+                <h2 className="fw-bold mb-0">
+
+                  {
+                    products.filter(
+                      (product) =>
+                        product.product_status ===
+                        "Available"
+                    ).length
+                  }
+
+                </h2>
+
+
+                <small className="text-secondary">
+                  Currently available
+                </small>
+
+              </div>
+
+            </div>
+
+          </div>
+
         </div>
 
 
-        {/* ===================================== */}
-        {/* PRODUCTS TABLE */}
-        {/* ===================================== */}
+        {/* =================================================
+            PRODUCTS TABLE
+        ================================================= */}
 
         <div
           className="card border-0 shadow-sm rounded-4"
@@ -717,7 +924,9 @@ function VendorProducts() {
                 <tbody>
 
 
-                  {/* NO PRODUCTS */}
+                  {/* =================================================
+                      NO PRODUCTS
+                  ================================================= */}
 
                   {filteredProducts.length === 0 ? (
 
@@ -762,7 +971,8 @@ function VendorProducts() {
                           <button
                             className="btn rounded-3"
                             style={{
-                              background: "#7C6EE6",
+                              background:
+                                "#7C6EE6",
                               color: "white"
                             }}
                             onClick={openAddForm}
@@ -779,7 +989,9 @@ function VendorProducts() {
                   )
 
 
-                  /* PRODUCTS */
+                  /* =================================================
+                      PRODUCTS
+                  ================================================= */
 
                   : (
 
@@ -810,6 +1022,10 @@ function VendorProducts() {
                                 alt={
                                   product.product_name
                                 }
+                                onError={(e) => {
+                                  e.target.src =
+                                    "/images/no-image.jpg";
+                                }}
                                 style={{
                                   width: "60px",
                                   height: "60px",
@@ -828,6 +1044,7 @@ function VendorProducts() {
                                     product.product_name
                                   }
                                 </div>
+
 
                                 <small
                                   className="text-secondary"
@@ -909,9 +1126,11 @@ function VendorProducts() {
                                     : "#C62828"
                               }}
                             >
+
                               {
                                 product.product_status
                               }
+
                             </span>
 
                           </td>
@@ -952,7 +1171,6 @@ function VendorProducts() {
 
                           </td>
 
-
                         </tr>
 
                       )
@@ -974,9 +1192,9 @@ function VendorProducts() {
       </div>
 
 
-      {/* ===================================== */}
-      {/* ADD / EDIT MODAL */}
-      {/* ===================================== */}
+      {/* =====================================================
+          ADD / EDIT MODAL
+      ===================================================== */}
 
       {showForm && (
 
@@ -1017,6 +1235,7 @@ function VendorProducts() {
 
                   </h4>
 
+
                   <p className="text-secondary mb-0">
 
                     {editingProduct
@@ -1039,6 +1258,8 @@ function VendorProducts() {
               </div>
 
 
+              {/* FORM */}
+
               <form onSubmit={handleSubmit}>
 
 
@@ -1051,6 +1272,7 @@ function VendorProducts() {
                   >
                     Product Name *
                   </label>
+
 
                   <input
                     type="text"
@@ -1077,6 +1299,7 @@ function VendorProducts() {
                     Description
                   </label>
 
+
                   <textarea
                     name="description"
                     className="form-control"
@@ -1101,6 +1324,7 @@ function VendorProducts() {
                     Category *
                   </label>
 
+
                   <select
                     name="category_id"
                     className="form-select"
@@ -1114,6 +1338,7 @@ function VendorProducts() {
                     <option value="">
                       Select Category
                     </option>
+
 
                     {categories.map(
                       (category) => (
@@ -1154,11 +1379,13 @@ function VendorProducts() {
                       Price *
                     </label>
 
+
                     <div className="input-group">
 
                       <span className="input-group-text">
                         ₹
                       </span>
+
 
                       <input
                         type="number"
@@ -1189,6 +1416,7 @@ function VendorProducts() {
                       Stock *
                     </label>
 
+
                     <input
                       type="number"
                       name="stock"
@@ -1217,6 +1445,7 @@ function VendorProducts() {
                     Product Image
                   </label>
 
+
                   <input
                     type="file"
                     className="form-control"
@@ -1225,6 +1454,7 @@ function VendorProducts() {
                       handleImageChange
                     }
                   />
+
 
                   <small className="text-secondary">
                     Accepted formats: JPG, JPEG, PNG, WEBP
@@ -1242,6 +1472,7 @@ function VendorProducts() {
                   >
                     Product Status
                   </label>
+
 
                   <select
                     name="product_status"
@@ -1303,7 +1534,6 @@ function VendorProducts() {
                   </button>
 
                 </div>
-
 
               </form>
 
